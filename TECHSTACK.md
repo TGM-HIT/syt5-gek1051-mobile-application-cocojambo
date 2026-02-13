@@ -29,4 +29,4 @@ Hier wird **Spring Boot** verwendet, da wir damit ebenfalls schon Erfahrung habe
 
 ## DevOps
 
-Als Versionierungssystem wird hier **Git & Github** verwendet. Alle Komponenten des Projekts werden in einem **docker-compose.yml** vereinfacht. Ebenfalls werden **Workflow-Dateien** (.yml) für die CI/CD-Pipeline verwendet. Für das Deployment wird wieder das zur Verfügung stehende Gitub Student Developer Pack verwendet.
+Als Versionierungssystem wird hier **Git & Github** verwendet. Alle Komponenten des Projekts werden in einem **docker-compose.yml** vereinfacht. Ebenfalls werden **Workflow-Dateien** (.yml) für die CI/CD-Pipeline verwendet. Diese wird durch Pull-Requests ausgelöst. Es sind nur Pull-Requests vorgesehen und direkte Pushes in den Main-Branch sind durch Branch-Restrictions nicht möglich. Für das Deployment wird wieder das zur Verfügung stehende Gitub Student Developer Pack verwendet.
