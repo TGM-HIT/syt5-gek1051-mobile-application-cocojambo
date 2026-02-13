@@ -2,12 +2,11 @@
 
 ## Überblick
 
-| Schicht                   | Technologie                |
-| ------------------------- | -------------------------- |
-| Frontend                  | VueJS (Compositions API)   |
-| Backend                   | Spring Boot                |
-| Datenbank (Server)        | Couchbase Server / CouchDB |
-| Datenbank (local storage) | Couchbase Lite / PouchDB   |
+| Schicht                   | Technologie              |
+| ------------------------- | ------------------------ |
+| Frontend                  | VueJS (Compositions API) |
+| Datenbank (Server)        | CouchDB                  |
+| Datenbank (local storage) | PouchDB                  |
 
 ## Frontend
 
@@ -19,13 +18,17 @@ Zusätzlich wird zur Vereinfachung des Codes **TailwindCSS** als CSS-Framework v
 
 Ebenfalls wird eine PWA zur Verfügung stehen. Diese wird mit dem Vite-Plugin erstellt.
 
-## Backend
+## Datenbank
 
-Hier wird **Spring Boot** verwendet, da wir damit ebenfalls schon Erfahrung haben, sowie dieses Backend-Framework passend zu dem Projekt ist. Folgende genauere Funktionen kommen hier vor:
+Hier wird **CouchDB** als zentrale Datenbank gewählt, sowie **PouchDB** als lokalen Storage, welcher bei z.B. Offline-Aktivität verwendet wird.
 
-- REST-Controller
+## Scan von QR-/Barcodes
 
-- REST-API von CouchDB zur Kommunikation mit CouchDB (falls verwendet wird)
+Dazu wird die Library **html5-qrcode** verwendet.
+
+## Abruf von Nährwerten von Produkten
+
+Hierzu gibt es die **Open Foods API**, welche wir verwenden werden. Hierbei können wir die zuvor mit html5-qrcode gescannten Codes zur Suche verwenden.
 
 ## DevOps
 
