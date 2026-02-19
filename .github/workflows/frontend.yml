@@ -1,4 +1,4 @@
-name: Frontend CI
+name: Frontend
 
 on:
   push:
@@ -39,3 +39,4 @@ jobs:
 
       - name: Print build output
         run: ls -la dist
+# dieser workflow wird jetzt korrekt in github actions ausgeführt
