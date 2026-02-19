@@ -36,3 +36,6 @@ jobs:
 
       - name: Run unit tests
         run: npm run test:unit
+
+      - name: Print build output
+        run: ls -la dist
