@@ -30,7 +30,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
           # Using a glob pattern helps if the runner is picky about the root path
-          cache-dependency-path: '**/package-lock.json'
+          # cache-dependency-path: '**/package-lock.json'
       - name: Install dependencies
         run: npm ci
 
