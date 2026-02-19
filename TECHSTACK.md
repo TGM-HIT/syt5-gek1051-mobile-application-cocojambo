@@ -14,13 +14,27 @@ Als Frontend-Framework wurde **VueJS** ausgewählt, da das Team damit schon Erfa
 
 Zusätzlich wird zur Vereinfachung des Codes **TailwindCSS** als CSS-Framework verwendet.
 
+Die Ordnerstruktur sieht so aus:
+
+```
+src
+|---- assets        (Logos, Bilder...)
+|---- components    (Wiederverwendbare UI-Komponenten)
+|---- views         (Fertige Seiten/Views)
+|---- db            (DB-Config)
+|---- stores        (Stores)
+|---- router        (Vue-Router-Config)
+```
+
+
+
 ### PWA
 
 Ebenfalls wird eine PWA zur Verfügung stehen. Diese wird mit dem Vite-Plugin erstellt.
 
 ## Datenbank
 
-Hier wird **CouchDB** als zentrale Datenbank gewählt, sowie **PouchDB** als lokalen Storage, welcher bei z.B. Offline-Aktivität verwendet wird.
+Hier wird **CouchDB** als zentrale Datenbank gewählt, sowie **PouchDB** als lokalen Storage, welcher bei z.B. Offline-Aktivität verwendet wird.  Um Konsistenzprobleme zu verhindern (z.B. 2 Personen haben kein Internet und haken Milch gleichzeitig ab) wird der Timestamp mitgeschickt und Abhakungen in der Liste chronologisch (anhand des Timestamps) angezeigt. 
 
 ## Scan von QR-/Barcodes
 
