@@ -37,6 +37,9 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit
 
+      - name: Run E2E tests
+        run: npm run test:e2e
+
       - name: Print build output
         run: ls -la dist
 # dieser workflow wird jetzt korrekt in github actions ausgeführt
