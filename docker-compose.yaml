@@ -6,6 +6,17 @@ version: '3.8'
 
 services:
 
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    restart: always
+    ports:
+      - "80:80"
+    networks:
+      cocojambo_network:
+        ipv4_address: 172.40.0.20
+
   couchdb:
     image: couchdb:${APP_VERSION}
     container_name: ${APP_NAME}
