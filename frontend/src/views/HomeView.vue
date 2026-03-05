@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useShoppingListStore } from '../stores/shoppingList.js'
+
+const router = useRouter()
 
 const store = useShoppingListStore()
 
@@ -60,7 +63,7 @@ async function submitForm() {
           :key="list._id"
           class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-start justify-between"
         >
-          <div>
+          <div class="flex-1 cursor-pointer" @click="router.push(`/list/${list._id}`)">
             <h2 class="text-lg font-semibold text-gray-800">{{ list.name }}</h2>
             <span
               v-if="list.category"
