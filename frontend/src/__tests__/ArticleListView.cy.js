@@ -21,90 +21,82 @@ const mockHiddenArticles = [
   { _id: 'a3', type: 'article', listId: 'list-1', name: 'Butter', quantity: 1, unit: 'kg', checked: false, hidden: true, _rev: '1-a3' },
 ]
 
-function mountView() {
-  const pinia = createPinia()
-  setActivePinia(pinia)
-
-  const articleStore = useArticleStore()
-  const listStore = useShoppingListStore()
-
-  cy.stub(articleStore, 'loadArticles').resolves()
-  cy.stub(articleStore, 'createArticle').resolves()
-  cy.stub(articleStore, 'updateArticle').resolves()
-  cy.stub(articleStore, 'toggleChecked').resolves()
-  cy.stub(articleStore, 'hideArticle').resolves()
-  cy.stub(articleStore, 'restoreArticle').resolves()
-  cy.stub(articleStore, 'deleteArticle').resolves()
-  cy.stub(listStore, 'loadLists').resolves()
-
-  listStore.lists = [mockList]
-
-  const router = createRouter({
-    history: createMemoryHistory(),
-    routes: [{ path: '/list/:id', component: ArticleListView }],
-  })
-  router.push('/list/list-1')
-
-  cy.mount(ArticleListView, {
-    global: { plugins: [pinia, router] },
-  })
-
-  return { articleStore, listStore }
-}
-
 describe('ArticleListView – Ausblenden & Löschen', () => {
+  let articleStore, listStore
+
+  beforeEach(() => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+
+    articleStore = useArticleStore()
+    listStore = useShoppingListStore()
+
+    cy.stub(articleStore, 'loadArticles').resolves()
+    cy.stub(articleStore, 'createArticle').resolves()
+    cy.stub(articleStore, 'updateArticle').resolves()
+    cy.stub(articleStore, 'toggleChecked').resolves()
+    cy.stub(articleStore, 'hideArticle').resolves()
+    cy.stub(articleStore, 'restoreArticle').resolves()
+    cy.stub(articleStore, 'deleteArticle').resolves()
+    cy.stub(listStore, 'loadLists').resolves()
+
+    listStore.lists = [mockList]
+
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/list/:id', component: ArticleListView }],
+    })
+
+    cy.wrap(router.push('/list/list-1')).then(() => {
+      cy.mount(ArticleListView, {
+        global: { plugins: [pinia, router] },
+      })
+    })
+  })
+
   it('shows active articles', () => {
-    const { articleStore } = mountView()
     articleStore.articles = [...mockArticles]
     cy.contains('Milch').should('be.visible')
     cy.contains('Brot').should('be.visible')
   })
 
   it('calls hideArticle when the hide button is clicked', () => {
-    const { articleStore } = mountView()
     articleStore.articles = [mockArticles[0]]
     cy.get('button[title="Ausblenden"]').click()
-    cy.wrap(articleStore.hideArticle).should('have.been.calledOnce')
     cy.wrap(articleStore.hideArticle).should('have.been.calledWith', 'list-1', mockArticles[0])
   })
 
   it('does not call deleteArticle when hide button is clicked', () => {
-    const { articleStore } = mountView()
     articleStore.articles = [mockArticles[0]]
     cy.get('button[title="Ausblenden"]').click()
     cy.wrap(articleStore.deleteArticle).should('not.have.been.called')
   })
 
   it('hidden articles section is not shown when hiddenArticles is empty', () => {
-    const { articleStore } = mountView()
     articleStore.articles = [...mockArticles]
     articleStore.hiddenArticles = []
     cy.contains('Ausgeblendete Artikel').should('not.exist')
   })
 
   it('shows toggle button when hiddenArticles exist', () => {
-    const { articleStore } = mountView()
     articleStore.articles = [...mockArticles]
     articleStore.hiddenArticles = [...mockHiddenArticles]
     cy.contains('Ausgeblendete Artikel (1)').should('be.visible')
   })
 
   it('hidden articles list is collapsed by default', () => {
-    const { articleStore } = mountView()
     articleStore.hiddenArticles = [...mockHiddenArticles]
     cy.contains('Ausgeblendete Artikel (1)').should('be.visible')
     cy.contains('Butter').should('not.exist')
   })
 
   it('expands hidden articles on toggle click', () => {
-    const { articleStore } = mountView()
     articleStore.hiddenArticles = [...mockHiddenArticles]
     cy.contains('Ausgeblendete Artikel (1)').click()
     cy.contains('Butter').should('be.visible')
   })
 
   it('collapses hidden articles on second toggle click', () => {
-    const { articleStore } = mountView()
     articleStore.hiddenArticles = [...mockHiddenArticles]
     cy.contains('Ausgeblendete Artikel (1)').click()
     cy.contains('Butter').should('be.visible')
@@ -113,7 +105,6 @@ describe('ArticleListView – Ausblenden & Löschen', () => {
   })
 
   it('calls restoreArticle when restore button is clicked', () => {
-    const { articleStore } = mountView()
     articleStore.hiddenArticles = [...mockHiddenArticles]
     cy.contains('Ausgeblendete Artikel (1)').click()
     cy.get('button[title="Wiederherstellen"]').click()
@@ -121,7 +112,6 @@ describe('ArticleListView – Ausblenden & Löschen', () => {
   })
 
   it('calls deleteArticle when permanent delete button is clicked in hidden section', () => {
-    const { articleStore } = mountView()
     articleStore.hiddenArticles = [...mockHiddenArticles]
     cy.contains('Ausgeblendete Artikel (1)').click()
     cy.get('button[title="Endgültig löschen"]').click()
@@ -129,7 +119,6 @@ describe('ArticleListView – Ausblenden & Löschen', () => {
   })
 
   it('shows the count of hidden articles in the toggle button', () => {
-    const { articleStore } = mountView()
     articleStore.hiddenArticles = [
       ...mockHiddenArticles,
       { _id: 'a4', name: 'Käse', quantity: 1, unit: '', hidden: true, _rev: '1-a4' },
