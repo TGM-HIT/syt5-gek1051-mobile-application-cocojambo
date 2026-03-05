@@ -18,7 +18,7 @@ export const useArticleStore = defineStore('article', {
       this.hiddenArticles = all.filter((doc) => doc.hidden)
     },
 
-    async createArticle(listId, name, quantity, unit) {
+    async createArticle(listId, name, quantity, unit, note) {
       await db.put({
         _id: Date.now().toString(),
         type: 'article',
@@ -26,6 +26,7 @@ export const useArticleStore = defineStore('article', {
         name,
         quantity: quantity || 1,
         unit: unit || '',
+        note: note || '',
         checked: false,
         createdAt: new Date().toISOString(),
       })
