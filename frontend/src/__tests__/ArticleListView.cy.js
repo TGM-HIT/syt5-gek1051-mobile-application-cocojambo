@@ -204,20 +204,20 @@ describe('ArticleListView – Suche', () => {
   it('shows "In dieser Liste" group when inCurrentList results exist', () => {
     articleStore.searchResults = { inCurrentList: [mockArticles[0]], inOtherLists: [], inPast: [] }
     cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
-    cy.contains('IN DIESER LISTE').should('be.visible')
+    cy.contains('In dieser Liste').should('be.visible')
     cy.contains('Milch').should('be.visible')
   })
 
   it('shows "Aus anderen Listen" group when inOtherLists results exist', () => {
     articleStore.searchResults = { inCurrentList: [], inOtherLists: [mockOtherListArticle], inPast: [] }
     cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
-    cy.contains('AUS ANDEREN LISTEN').should('be.visible')
+    cy.contains('Aus anderen Listen').should('be.visible')
   })
 
   it('shows "Vergangene Artikel" group when inPast results exist', () => {
     articleStore.searchResults = { inCurrentList: [], inOtherLists: [], inPast: [mockPastArticle] }
     cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
-    cy.contains('VERGANGENE ARTIKEL').should('be.visible')
+    cy.contains('Vergangene Artikel').should('be.visible')
     cy.contains('Milch Bio').should('be.visible')
   })
 
@@ -230,14 +230,14 @@ describe('ArticleListView – Suche', () => {
   it('calls toggleChecked when clicking a result in current list', () => {
     articleStore.searchResults = { inCurrentList: [mockArticles[0]], inOtherLists: [], inPast: [] }
     cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
-    cy.contains('IN DIESER LISTE').parent().contains('Milch').click()
+    cy.contains('In dieser Liste').parent().contains('Milch').click()
     cy.wrap(articleStore.toggleChecked).should('have.been.calledWith', 'list-1', mockArticles[0])
   })
 
   it('calls addFromSearch and clears query when clicking a result from other list', () => {
     articleStore.searchResults = { inCurrentList: [], inOtherLists: [mockOtherListArticle], inPast: [] }
     cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
-    cy.contains('AUS ANDEREN LISTEN').parent().contains('Milch').click()
+    cy.contains('Aus anderen Listen').parent().contains('Milch').click()
     cy.wrap(articleStore.addFromSearch).should('have.been.calledWith', 'list-1', mockOtherListArticle)
     cy.get('input[placeholder="Artikel suchen..."]').should('have.value', '')
   })
@@ -245,7 +245,7 @@ describe('ArticleListView – Suche', () => {
   it('calls addFromSearch and clears query when clicking a past article', () => {
     articleStore.searchResults = { inCurrentList: [], inOtherLists: [], inPast: [mockPastArticle] }
     cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
-    cy.contains('VERGANGENE ARTIKEL').parent().contains('Milch Bio').click()
+    cy.contains('Vergangene Artikel').parent().contains('Milch Bio').click()
     cy.wrap(articleStore.addFromSearch).should('have.been.calledWith', 'list-1', mockPastArticle)
     cy.get('input[placeholder="Artikel suchen..."]').should('have.value', '')
   })
