@@ -23,3 +23,16 @@
 //
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
+
+/**
+ * Deletes the PouchDB IndexedDB database and reloads the page so the app
+ * starts fresh with an empty database. Requires a page to already be visited.
+ */
+/**
+ * Destroys the PouchDB database via the app's exposed helper (closes the
+ * IndexedDB connection cleanly) then reloads so the app starts fresh.
+ */
+Cypress.Commands.add('clearPouchDB', () => {
+  cy.window().then((win) => win.__destroyDB())
+  cy.reload()
+})

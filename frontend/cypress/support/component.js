@@ -26,5 +26,10 @@ import { mount } from 'cypress/vue'
 
 Cypress.Commands.add('mount', mount)
 
-// Example use:
-// cy.mount(MyComponent)
+// Vue DevTools tries to access the app asynchronously after teardown in component
+// tests, which causes an uncaught exception. Suppress it so tests don't fail.
+Cypress.on('uncaught:exception', (err) => {
+  if (err.message.includes("Cannot read properties of undefined (reading 'app')")) {
+    return false
+  }
+})
