@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useArticleStore } from '../stores/article.js'
 import { useShoppingListStore } from '../stores/shoppingList.js'
@@ -16,6 +16,18 @@ const showModal = ref(false)
 const showEditModal = ref(false)
 const showHidden = ref(false)
 const submitting = ref(false)
+const searchQuery = ref('')
+
+watch(searchQuery, (q) => articleStore.searchArticles(q, listId))
+
+async function toggleFromSearch(article) {
+  await articleStore.toggleChecked(listId, article)
+  await articleStore.searchArticles(searchQuery.value, listId)
+}
+
+function clearSearch() {
+  searchQuery.value = ''
+}
 
 const newName = ref('')
 const newQuantity = ref(1)
@@ -112,6 +124,112 @@ async function submitEdit() {
         </button>
       </div>
     </header>
+
+    <!-- Search -->
+    <div class="bg-white border-b border-gray-100">
+      <div class="max-w-3xl mx-auto px-4 py-3">
+        <div class="relative">
+          <span class="absolute left-3 top-2 text-gray-400 text-sm pointer-events-none">🔍</span>
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Artikel suchen..."
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 pl-9 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            v-if="searchQuery"
+            @click="clearSearch"
+            class="absolute right-3 top-2 text-gray-400 hover:text-gray-600"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Search results -->
+        <div
+          v-if="searchQuery"
+          class="mt-2 bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden"
+        >
+          <!-- In current list -->
+          <div v-if="articleStore.searchResults.inCurrentList.length > 0">
+            <p class="text-xs font-semibold text-gray-400 px-4 pt-3 pb-1 uppercase tracking-wide">
+              In dieser Liste
+            </p>
+            <div
+              v-for="article in articleStore.searchResults.inCurrentList"
+              :key="article._id"
+              @click="toggleFromSearch(article)"
+              class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                :checked="article.checked"
+                class="w-4 h-4 accent-blue-600 pointer-events-none flex-shrink-0"
+              />
+              <span
+                class="text-sm text-gray-800 flex-1"
+                :class="{ 'line-through text-gray-400': article.checked }"
+              >
+                {{ article.name }}
+              </span>
+              <span class="text-xs text-gray-400">
+                {{ article.quantity }}{{ article.unit ? ' ' + article.unit : '' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- From other lists -->
+          <div v-if="articleStore.searchResults.inOtherLists.length > 0">
+            <p class="text-xs font-semibold text-gray-400 px-4 pt-3 pb-1 uppercase tracking-wide">
+              Aus anderen Listen
+            </p>
+            <div
+              v-for="article in articleStore.searchResults.inOtherLists"
+              :key="article._id"
+              @click="articleStore.addFromSearch(listId, article); clearSearch()"
+              class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
+            >
+              <span class="text-gray-400 text-sm flex-shrink-0">+</span>
+              <span class="text-sm text-gray-800 flex-1">{{ article.name }}</span>
+              <span class="text-xs text-gray-400">
+                {{ article.quantity }}{{ article.unit ? ' ' + article.unit : '' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Past / hidden articles -->
+          <div v-if="articleStore.searchResults.inPast.length > 0">
+            <p class="text-xs font-semibold text-gray-400 px-4 pt-3 pb-1 uppercase tracking-wide">
+              Vergangene Artikel
+            </p>
+            <div
+              v-for="article in articleStore.searchResults.inPast"
+              :key="article._id"
+              @click="articleStore.addFromSearch(listId, article); clearSearch()"
+              class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
+            >
+              <span class="text-gray-400 text-sm flex-shrink-0">↩</span>
+              <span class="text-sm text-gray-500 flex-1 line-through">{{ article.name }}</span>
+              <span class="text-xs text-gray-400">
+                {{ article.quantity }}{{ article.unit ? ' ' + article.unit : '' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- No results -->
+          <div
+            v-if="
+              articleStore.searchResults.inCurrentList.length === 0 &&
+              articleStore.searchResults.inOtherLists.length === 0 &&
+              articleStore.searchResults.inPast.length === 0
+            "
+            class="px-4 py-4 text-center text-sm text-gray-400"
+          >
+            Keine Artikel gefunden.
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Article list -->
     <main class="max-w-3xl mx-auto px-4 py-6">

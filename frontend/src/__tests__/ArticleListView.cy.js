@@ -127,6 +127,13 @@ describe('ArticleListView – Ausblenden & Löschen', () => {
   })
 })
 
+const mockOtherListArticle = {
+  _id: 'b1', type: 'article', listId: 'list-2', name: 'Milch', quantity: 1, unit: 'l', checked: false, hidden: false, _rev: '1-b1',
+}
+const mockPastArticle = {
+  _id: 'c1', type: 'article', listId: 'list-1', name: 'Milch Bio', quantity: 1, unit: 'l', checked: false, hidden: true, _rev: '1-c1',
+}
+
 describe('ArticleListView – Notizen', () => {
   let articleStore, listStore
 
@@ -201,5 +208,128 @@ describe('ArticleListView – Notizen', () => {
       ...mockArticles[0],
       note: 'Vollmilch',
     })
+  })
+})
+
+describe('ArticleListView – Suche', () => {
+  let articleStore, listStore
+
+  beforeEach(() => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+
+    articleStore = useArticleStore()
+    listStore = useShoppingListStore()
+
+    cy.stub(articleStore, 'loadArticles').resolves()
+    cy.stub(articleStore, 'createArticle').resolves()
+    cy.stub(articleStore, 'updateArticle').resolves()
+    cy.stub(articleStore, 'toggleChecked').resolves()
+    cy.stub(articleStore, 'hideArticle').resolves()
+    cy.stub(articleStore, 'restoreArticle').resolves()
+    cy.stub(articleStore, 'deleteArticle').resolves()
+    cy.stub(articleStore, 'searchArticles').resolves()
+    cy.stub(articleStore, 'addFromSearch').resolves()
+    cy.stub(listStore, 'loadLists').resolves()
+
+    listStore.lists = [mockList]
+
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/list/:id', component: ArticleListView }],
+    })
+
+    cy.wrap(router.push('/list/list-1')).then(() => {
+      cy.mount(ArticleListView, {
+        global: { plugins: [pinia, router] },
+      })
+    })
+  })
+
+  it('shows the search input', () => {
+    cy.get('input[placeholder="Artikel suchen..."]').should('be.visible')
+  })
+
+  it('does not show results panel when query is empty', () => {
+    cy.contains('In dieser Liste').should('not.exist')
+    cy.contains('Aus anderen Listen').should('not.exist')
+    cy.contains('Vergangene Artikel').should('not.exist')
+  })
+
+  it('does not show the clear button when query is empty', () => {
+    cy.get('input[placeholder="Artikel suchen..."]').should('be.visible')
+    cy.contains('button', '✕').should('not.exist')
+  })
+
+  it('calls searchArticles when typing', () => {
+    cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
+    cy.wrap(articleStore.searchArticles).should('have.been.calledWith', 'Milch', 'list-1')
+  })
+
+  it('shows clear button when query is not empty', () => {
+    cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
+    cy.get('button').filter(':contains("✕")').should('be.visible')
+  })
+
+  it('clears search and hides results on clear button click', () => {
+    cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
+    cy.get('button').filter(':contains("✕")').click()
+    cy.get('input[placeholder="Artikel suchen..."]').should('have.value', '')
+    cy.contains('In dieser Liste').should('not.exist')
+  })
+
+  it('shows "In dieser Liste" group when inCurrentList results exist', () => {
+    articleStore.searchResults = { inCurrentList: [mockArticles[0]], inOtherLists: [], inPast: [] }
+    cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
+    cy.contains('In dieser Liste').should('be.visible')
+    cy.contains('Milch').should('be.visible')
+  })
+
+  it('shows "Aus anderen Listen" group when inOtherLists results exist', () => {
+    articleStore.searchResults = { inCurrentList: [], inOtherLists: [mockOtherListArticle], inPast: [] }
+    cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
+    cy.contains('Aus anderen Listen').should('be.visible')
+  })
+
+  it('shows "Vergangene Artikel" group when inPast results exist', () => {
+    articleStore.searchResults = { inCurrentList: [], inOtherLists: [], inPast: [mockPastArticle] }
+    cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
+    cy.contains('Vergangene Artikel').should('be.visible')
+    cy.contains('Milch Bio').should('be.visible')
+  })
+
+  it('shows "Keine Artikel gefunden" when all result groups are empty', () => {
+    articleStore.searchResults = { inCurrentList: [], inOtherLists: [], inPast: [] }
+    cy.get('input[placeholder="Artikel suchen..."]').type('xyz')
+    cy.contains('Keine Artikel gefunden').should('be.visible')
+  })
+
+  it('calls toggleChecked when clicking a result in current list', () => {
+    articleStore.searchResults = { inCurrentList: [mockArticles[0]], inOtherLists: [], inPast: [] }
+    cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
+    cy.contains('In dieser Liste').parent().contains('Milch').click()
+    cy.wrap(articleStore.toggleChecked).should('have.been.calledWith', 'list-1', mockArticles[0])
+  })
+
+  it('calls addFromSearch and clears query when clicking a result from other list', () => {
+    articleStore.searchResults = { inCurrentList: [], inOtherLists: [mockOtherListArticle], inPast: [] }
+    cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
+    cy.contains('Aus anderen Listen').parent().contains('Milch').click()
+    cy.wrap(articleStore.addFromSearch).should('have.been.calledWith', 'list-1', mockOtherListArticle)
+    cy.get('input[placeholder="Artikel suchen..."]').should('have.value', '')
+  })
+
+  it('calls addFromSearch and clears query when clicking a past article', () => {
+    articleStore.searchResults = { inCurrentList: [], inOtherLists: [], inPast: [mockPastArticle] }
+    cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
+    cy.contains('Vergangene Artikel').parent().contains('Milch Bio').click()
+    cy.wrap(articleStore.addFromSearch).should('have.been.calledWith', 'list-1', mockPastArticle)
+    cy.get('input[placeholder="Artikel suchen..."]').should('have.value', '')
+  })
+
+  it('shows quantity and unit in search results', () => {
+    articleStore.searchResults = { inCurrentList: [mockArticles[0]], inOtherLists: [], inPast: [] }
+    cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
+    cy.contains('2 l').should('be.visible')
   })
 })

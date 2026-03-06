@@ -5,6 +5,7 @@ export const useArticleStore = defineStore('article', {
   state: () => ({
     articles: [],
     hiddenArticles: [],
+    searchResults: { inCurrentList: [], inOtherLists: [], inPast: [] },
   }),
 
   actions: {
@@ -56,6 +57,28 @@ export const useArticleStore = defineStore('article', {
     async deleteArticle(listId, id, rev) {
       await db.remove(id, rev)
       await this.loadArticles(listId)
+    },
+
+    async searchArticles(query, currentListId) {
+      if (!query.trim()) {
+        this.searchResults = { inCurrentList: [], inOtherLists: [], inPast: [] }
+        return
+      }
+      const q = query.toLowerCase()
+      const result = await db.allDocs({ include_docs: true })
+      const all = result.rows
+        .map((row) => row.doc)
+        .filter((doc) => doc.type === 'article' && doc.name.toLowerCase().includes(q))
+      this.searchResults = {
+        inCurrentList: all.filter((doc) => doc.listId === currentListId && !doc.hidden),
+        inOtherLists: all.filter((doc) => doc.listId !== currentListId && !doc.hidden),
+        inPast: all.filter((doc) => doc.hidden),
+      }
+    },
+
+    async addFromSearch(currentListId, article) {
+      await this.createArticle(currentListId, article.name, article.quantity, article.unit)
+      this.searchResults = { inCurrentList: [], inOtherLists: [], inPast: [] }
     },
   },
 })

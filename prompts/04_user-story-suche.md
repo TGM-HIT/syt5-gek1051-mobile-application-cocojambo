@@ -1,0 +1,1 @@
+Als Benutzer möchte ich ein Suchfeld in meiner Liste haben welches Produkte in dieser Liste, Produkte in anderen Listen oder Produkte aus der Vergangenheit anzeigt, um Produkte einfacher abzuhaken oder hinzuzufügen. ich habe eine neue user story bekommen
