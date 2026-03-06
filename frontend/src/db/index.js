@@ -6,8 +6,8 @@ const remoteUrl = import.meta.env.VITE_COUCHDB_URL || 'http://admin:password@loc
 
 db.sync(remoteUrl, { live: true, retry: true })
 
-// Expose a cleanup helper for E2E tests so Cypress can destroy the database
-// cleanly (closes the connection) before reloading for test isolation.
+// Expose helpers for Cypress tests: destroy for isolation, __db for stubbing.
 window.__destroyDB = () => db.destroy()
+window.__db = db
 
 export { db }

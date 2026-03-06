@@ -32,11 +32,13 @@ function clearSearch() {
 const newName = ref('')
 const newQuantity = ref(1)
 const newUnit = ref('')
+const newNote = ref('')
 
 const editingArticle = ref(null)
 const editName = ref('')
 const editQuantity = ref(1)
 const editUnit = ref('')
+const editNote = ref('')
 
 onMounted(async () => {
   await listStore.loadLists()
@@ -48,6 +50,7 @@ function openModal() {
   newName.value = ''
   newQuantity.value = 1
   newUnit.value = ''
+  newNote.value = ''
   showModal.value = true
 }
 
@@ -58,7 +61,7 @@ function closeModal() {
 async function submitCreate() {
   if (!newName.value.trim()) return
   submitting.value = true
-  await articleStore.createArticle(listId, newName.value.trim(), newQuantity.value, newUnit.value.trim())
+  await articleStore.createArticle(listId, newName.value.trim(), newQuantity.value, newUnit.value.trim(), newNote.value.trim())
   submitting.value = false
   closeModal()
 }
@@ -68,6 +71,7 @@ function openEditModal(article) {
   editName.value = article.name
   editQuantity.value = article.quantity
   editUnit.value = article.unit || ''
+  editNote.value = article.note || ''
   showEditModal.value = true
 }
 
@@ -84,6 +88,7 @@ async function submitEdit() {
     name: editName.value.trim(),
     quantity: editQuantity.value,
     unit: editUnit.value.trim(),
+    note: editNote.value.trim(),
   })
   submitting.value = false
   closeEditModal()
@@ -260,6 +265,7 @@ async function submitEdit() {
               {{ article.quantity }}
               <span v-if="article.unit">{{ article.unit }}</span>
             </p>
+            <p v-if="article.note" class="text-xs text-gray-500 mt-0.5 italic">{{ article.note }}</p>
           </div>
 
           <!-- Actions -->
@@ -368,6 +374,15 @@ async function submitEdit() {
               />
             </div>
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Notiz</label>
+            <input
+              v-model="newNote"
+              type="text"
+              placeholder="z.B. Bio-Qualität"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
           <div class="flex gap-3 pt-2">
             <button
               type="button"
@@ -426,6 +441,15 @@ async function submitEdit() {
                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Notiz</label>
+            <input
+              v-model="editNote"
+              type="text"
+              placeholder="z.B. Bio-Qualität"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
           <div class="flex gap-3 pt-2">
             <button
