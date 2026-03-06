@@ -92,9 +92,29 @@ describe('HomeView', () => {
     cy.contains('h2', 'Neue Liste erstellen').should('not.exist')
   })
 
-  it('calls deleteList when delete button is clicked', () => {
+  it('shows delete confirmation modal when delete button is clicked', () => {
     store.lists = [mockLists[0]]
     cy.get('button[title="Liste löschen"]').click()
+    cy.contains('Liste löschen?').should('be.visible')
+    cy.contains('„Wocheneinkauf"').should('be.visible')
+  })
+
+  it('calls deleteList after confirming delete', () => {
+    store.lists = [mockLists[0]]
+    cy.get('button[title="Liste löschen"]').click()
+    cy.contains('Liste löschen?').should('be.visible')
+    cy.contains('button', 'Löschen').click()
     cy.wrap(store.deleteList).should('have.been.calledWith', '1', '1-abc')
   })
+
+  it('closes delete modal and does not delete on Abbrechen click', () => {
+    store.lists = [mockLists[0]]
+    cy.get('button[title="Liste löschen"]').click()
+    cy.contains('Liste löschen?').should('be.visible')
+    cy.contains('button', 'Abbrechen').click()
+    cy.contains('Liste löschen?').should('not.exist')
+    cy.wrap(store.deleteList).should('not.have.been.called')
+  })
 })
+
+

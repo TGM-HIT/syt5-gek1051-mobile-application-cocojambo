@@ -12,6 +12,9 @@ const name = ref('')
 const category = ref('')
 const submitting = ref(false)
 
+const showDeleteModal = ref(false)
+const listToDelete = ref(null)
+
 onMounted(() => {
   store.loadLists()
 })
@@ -33,6 +36,22 @@ async function submitForm() {
   submitting.value = false
   closeModal()
 }
+
+function confirmDelete(list) {
+  listToDelete.value = list
+  showDeleteModal.value = true
+}
+
+function cancelDelete() {
+  listToDelete.value = null
+  showDeleteModal.value = false
+}
+
+async function executeDelete() {
+  if (!listToDelete.value) return
+  await store.deleteList(listToDelete.value._id, listToDelete.value._rev)
+  cancelDelete()
+}
 </script>
 
 <template>
@@ -42,8 +61,8 @@ async function submitForm() {
       <div class="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
         <h1 class="text-2xl font-bold text-gray-800">Einkaufslisten</h1>
         <button
-          @click="openModal"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+            @click="openModal"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
         >
           + Neue Liste erstellen
         </button>
@@ -59,15 +78,15 @@ async function submitForm() {
 
       <div class="grid gap-4">
         <div
-          v-for="list in store.lists"
-          :key="list._id"
-          class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-start justify-between"
+            v-for="list in store.lists"
+            :key="list._id"
+            class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-start justify-between"
         >
           <div class="flex-1 cursor-pointer" @click="router.push(`/list/${list._id}`)">
             <h2 class="text-lg font-semibold text-gray-800">{{ list.name }}</h2>
             <span
-              v-if="list.category"
-              class="inline-block mt-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full px-2 py-0.5"
+                v-if="list.category"
+                class="inline-block mt-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full px-2 py-0.5"
             >
               {{ list.category }}
             </span>
@@ -76,9 +95,9 @@ async function submitForm() {
             </p>
           </div>
           <button
-            @click="store.deleteList(list._id, list._rev)"
-            class="text-gray-400 hover:text-red-500 transition-colors ml-4 mt-1"
-            title="Liste löschen"
+              @click="confirmDelete(list)"
+              class="text-gray-400 hover:text-red-500 transition-colors ml-4 mt-1"
+              title="Liste löschen"
           >
             ✕
           </button>
@@ -86,11 +105,11 @@ async function submitForm() {
       </div>
     </main>
 
-    <!-- Modal -->
+    <!-- Create Modal -->
     <div
-      v-if="showModal"
-      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
-      @click.self="closeModal"
+        v-if="showModal"
+        class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+        @click.self="closeModal"
     >
       <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
         <h2 class="text-xl font-bold text-gray-800 mb-4">Neue Liste erstellen</h2>
@@ -98,39 +117,72 @@ async function submitForm() {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
             <input
-              v-model="name"
-              type="text"
-              required
-              placeholder="z.B. Wocheneinkauf"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                v-model="name"
+                type="text"
+                required
+                placeholder="z.B. Wocheneinkauf"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Kategorie</label>
             <input
-              v-model="category"
-              type="text"
-              placeholder="z.B. Lebensmittel"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                v-model="category"
+                type="text"
+                placeholder="z.B. Lebensmittel"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div class="flex gap-3 pt-2">
             <button
-              type="button"
-              @click="closeModal"
-              class="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+                type="button"
+                @click="closeModal"
+                class="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
             >
               Abbrechen
             </button>
             <button
-              type="submit"
-              :disabled="submitting"
-              class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
+                type="submit"
+                :disabled="submitting"
+                class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
             >
               {{ submitting ? 'Erstelle...' : 'Erstellen' }}
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div
+        v-if="showDeleteModal"
+        class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+        @click.self="cancelDelete"
+    >
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+        <div class="flex items-center gap-3 mb-3">
+          <h2 class="text-lg font-bold text-gray-800">Liste löschen?</h2>
+        </div>
+        <p class="text-sm text-gray-600 mb-1">
+          Bist du sicher, dass du die Liste
+          <span class="font-semibold text-gray-800">„{{ listToDelete?.name }}"</span>
+          löschen möchtest?
+        </p>
+        <p class="text-xs text-gray-400 mb-6">Diese Aktion kann eventuell nicht rückgängig gemacht werden.</p>
+        <div class="flex gap-3">
+          <button
+              @click="cancelDelete"
+              class="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            Abbrechen
+          </button>
+          <button
+              @click="executeDelete"
+              class="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2 text-sm font-medium transition-colors"
+          >
+            Löschen
+          </button>
+        </div>
       </div>
     </div>
   </div>
