@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { useShoppingListStore } from '../stores/shoppingList.js'
-import HomeView from '../views/HomeView.vue'
+import { useShoppingListStore } from '../../src/stores/shoppingList.js'
+import HomeView from '../../src/views/HomeView.vue'
 
 const mockLists = [
   { _id: '1', name: 'Wocheneinkauf', category: 'Lebensmittel', createdAt: '2024-01-01T10:00:00.000Z', _rev: '1-abc' },

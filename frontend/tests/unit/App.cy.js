@@ -1,4 +1,4 @@
-import App from '../App.vue'
+import App from '../../src/App.vue'
 import { createPinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
 
