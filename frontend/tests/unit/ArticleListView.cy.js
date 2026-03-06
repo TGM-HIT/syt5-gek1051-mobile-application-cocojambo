@@ -1,8 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
-import { useArticleStore } from '../stores/article.js'
-import { useShoppingListStore } from '../stores/shoppingList.js'
-import ArticleListView from '../views/ArticleListView.vue'
+import { useArticleStore } from '../../src/stores/article.js'
+import { useShoppingListStore } from '../../src/stores/shoppingList.js'
+import ArticleListView from '../../src/views/ArticleListView.vue'
 
 const mockList = {
   _id: 'list-1',
