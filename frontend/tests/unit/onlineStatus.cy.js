@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
-import App from '../App.vue'
-import { useOnlineStatusStore } from '../stores/onlineStatus.js'
+import App from '../../src/App.vue'
+import { useOnlineStatusStore } from '../../src/stores/onlineStatus.js'
 
 function mountApp() {
   const pinia = createPinia()

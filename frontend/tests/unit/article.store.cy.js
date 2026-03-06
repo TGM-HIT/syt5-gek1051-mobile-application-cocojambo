@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { useArticleStore } from '../stores/article.js'
+import { useArticleStore } from '../../src/stores/article.js'
 
 const makeAllDocsResult = (docs) => ({
   rows: docs.map((doc) => ({ doc })),
