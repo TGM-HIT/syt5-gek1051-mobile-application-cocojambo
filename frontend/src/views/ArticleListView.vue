@@ -1,8 +1,8 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useArticleStore } from '../stores/article.js'
-import { useShoppingListStore } from '../stores/shoppingList.js'
+import {ref, onMounted, watch} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import {useArticleStore} from '../stores/article.js'
+import {useShoppingListStore} from '../stores/shoppingList.js'
 import BarcodeScanner from './BarcodeScanner.vue'
 
 const route = useRoute()
@@ -19,6 +19,9 @@ const showScanner = ref(false)
 const showHidden = ref(false)
 const submitting = ref(false)
 const searchQuery = ref('')
+
+// Sub-issue #59: Verlassen-Modal
+const showLeaveModal = ref(false)
 
 watch(searchQuery, (q) => articleStore.searchArticles(q, listId))
 
@@ -103,6 +106,13 @@ async function submitEdit() {
   submitting.value = false
   closeEditModal()
 }
+
+// Sub-issue #59 + #60: Liste verlassen und zur Übersicht weiterleiten (AC5)
+async function executeLeave() {
+  await listStore.leaveList(listId)
+  showLeaveModal.value = false
+  router.push('/')
+}
 </script>
 
 <template>
@@ -111,31 +121,42 @@ async function submitEdit() {
     <header class="bg-white shadow-sm">
       <div class="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
         <button
-          @click="router.push('/')"
-          class="text-gray-500 hover:text-gray-800 transition-colors text-lg font-medium"
-          title="Zurück"
+            @click="router.push('/')"
+            class="text-gray-500 hover:text-gray-800 transition-colors text-lg font-medium"
+            title="Zurück"
         >
           ←
         </button>
         <div class="flex-1">
           <h1 class="text-2xl font-bold text-gray-800">{{ list?.name ?? 'Liste' }}</h1>
           <span
-            v-if="list?.category"
-            class="inline-block text-xs font-medium bg-blue-100 text-blue-700 rounded-full px-2 py-0.5"
+              v-if="list?.category"
+              class="inline-block text-xs font-medium bg-blue-100 text-blue-700 rounded-full px-2 py-0.5"
           >
             {{ list.category }}
           </span>
         </div>
+
+        <!-- Sub-issue #59: "Liste verlassen"-Button in der Detailansicht -->
         <button
-          @click="showScanner = true"
-          class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-3 py-2 rounded-lg transition-colors"
-          title="Barcode scannen"
+            @click="showLeaveModal = true"
+            class="bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-600 font-medium px-3 py-2 rounded-lg transition-colors text-sm"
+            title="Liste verlassen"
+            data-cy="leave-list-button"
+        >
+          Verlassen
+        </button>
+
+        <button
+            @click="showScanner = true"
+            class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-3 py-2 rounded-lg transition-colors"
+            title="Barcode scannen"
         >
           Scan Barcode
         </button>
         <button
-          @click="openModal"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+            @click="openModal"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
         >
           + Artikel
         </button>
@@ -148,15 +169,15 @@ async function submitEdit() {
         <div class="relative">
           <span class="absolute left-3 top-2 text-gray-400 text-sm pointer-events-none">🔍</span>
           <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Artikel suchen..."
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 pl-9 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              v-model="searchQuery"
+              type="text"
+              placeholder="Artikel suchen..."
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 pl-9 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
-            v-if="searchQuery"
-            @click="clearSearch"
-            class="absolute right-3 top-2 text-gray-400 hover:text-gray-600"
+              v-if="searchQuery"
+              @click="clearSearch"
+              class="absolute right-3 top-2 text-gray-400 hover:text-gray-600"
           >
             ✕
           </button>
@@ -164,8 +185,8 @@ async function submitEdit() {
 
         <!-- Search results -->
         <div
-          v-if="searchQuery"
-          class="mt-2 bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden"
+            v-if="searchQuery"
+            class="mt-2 bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden"
         >
           <!-- In current list -->
           <div v-if="articleStore.searchResults.inCurrentList.length > 0">
@@ -173,19 +194,19 @@ async function submitEdit() {
               In dieser Liste
             </p>
             <div
-              v-for="article in articleStore.searchResults.inCurrentList"
-              :key="article._id"
-              @click="toggleFromSearch(article)"
-              class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                v-for="article in articleStore.searchResults.inCurrentList"
+                :key="article._id"
+                @click="toggleFromSearch(article)"
+                class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
             >
               <input
-                type="checkbox"
-                :checked="article.checked"
-                class="w-4 h-4 accent-blue-600 pointer-events-none flex-shrink-0"
+                  type="checkbox"
+                  :checked="article.checked"
+                  class="w-4 h-4 accent-blue-600 pointer-events-none flex-shrink-0"
               />
               <span
-                class="text-sm text-gray-800 flex-1"
-                :class="{ 'line-through text-gray-400': article.checked }"
+                  class="text-sm text-gray-800 flex-1"
+                  :class="{ 'line-through text-gray-400': article.checked }"
               >
                 {{ article.name }}
               </span>
@@ -201,10 +222,10 @@ async function submitEdit() {
               Aus anderen Listen
             </p>
             <div
-              v-for="article in articleStore.searchResults.inOtherLists"
-              :key="article._id"
-              @click="articleStore.addFromSearch(listId, article); clearSearch()"
-              class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                v-for="article in articleStore.searchResults.inOtherLists"
+                :key="article._id"
+                @click="articleStore.addFromSearch(listId, article); clearSearch()"
+                class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
             >
               <span class="text-gray-400 text-sm flex-shrink-0">+</span>
               <span class="text-sm text-gray-800 flex-1">{{ article.name }}</span>
@@ -220,10 +241,10 @@ async function submitEdit() {
               Vergangene Artikel
             </p>
             <div
-              v-for="article in articleStore.searchResults.inPast"
-              :key="article._id"
-              @click="articleStore.addFromSearch(listId, article); clearSearch()"
-              class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                v-for="article in articleStore.searchResults.inPast"
+                :key="article._id"
+                @click="articleStore.addFromSearch(listId, article); clearSearch()"
+                class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
             >
               <span class="text-gray-400 text-sm flex-shrink-0">↩</span>
               <span class="text-sm text-gray-500 flex-1 line-through">{{ article.name }}</span>
@@ -235,12 +256,12 @@ async function submitEdit() {
 
           <!-- No results -->
           <div
-            v-if="
+              v-if="
               articleStore.searchResults.inCurrentList.length === 0 &&
               articleStore.searchResults.inOtherLists.length === 0 &&
               articleStore.searchResults.inPast.length === 0
             "
-            class="px-4 py-4 text-center text-sm text-gray-400"
+              class="px-4 py-4 text-center text-sm text-gray-400"
           >
             Keine Artikel gefunden.
           </div>
@@ -257,24 +278,24 @@ async function submitEdit() {
 
       <div class="grid gap-3">
         <div
-          v-for="article in articleStore.articles"
-          :key="article._id"
-          class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex items-center gap-4"
-          :class="{ 'opacity-60': article.checked }"
+            v-for="article in articleStore.articles"
+            :key="article._id"
+            class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex items-center gap-4"
+            :class="{ 'opacity-60': article.checked }"
         >
           <!-- Checkbox -->
           <input
-            type="checkbox"
-            :checked="article.checked"
-            @change="articleStore.toggleChecked(listId, article)"
-            class="w-5 h-5 accent-blue-600 cursor-pointer flex-shrink-0"
+              type="checkbox"
+              :checked="article.checked"
+              @change="articleStore.toggleChecked(listId, article)"
+              class="w-5 h-5 accent-blue-600 cursor-pointer flex-shrink-0"
           />
 
           <!-- Info -->
           <div class="flex-1 min-w-0">
             <p
-              class="text-base font-medium text-gray-800 truncate"
-              :class="{ 'line-through text-gray-400': article.checked }"
+                class="text-base font-medium text-gray-800 truncate"
+                :class="{ 'line-through text-gray-400': article.checked }"
             >
               {{ article.name }}
             </p>
@@ -288,27 +309,28 @@ async function submitEdit() {
           <!-- Actions -->
           <div class="flex items-center gap-2 flex-shrink-0">
             <button
-              @click="openEditModal(article)"
-              class="text-gray-400 hover:text-blue-500 transition-colors"
-              title="Bearbeiten"
+                @click="openEditModal(article)"
+                class="text-gray-400 hover:text-blue-500 transition-colors"
+                title="Bearbeiten"
             >
               ✎
             </button>
             <button
-              @click="articleStore.hideArticle(listId, article)"
-              class="text-gray-400 hover:text-orange-500 transition-colors"
-              title="Ausblenden"
+                @click="articleStore.hideArticle(listId, article)"
+                class="text-gray-400 hover:text-orange-500 transition-colors"
+                title="Ausblenden"
             >
               ✕
             </button>
           </div>
         </div>
       </div>
+
       <!-- Hidden articles section -->
       <div v-if="articleStore.hiddenArticles.length > 0" class="mt-8">
         <button
-          @click="showHidden = !showHidden"
-          class="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors font-medium"
+            @click="showHidden = !showHidden"
+            class="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors font-medium"
         >
           <span>{{ showHidden ? '▾' : '▸' }}</span>
           Ausgeblendete Artikel ({{ articleStore.hiddenArticles.length }})
@@ -316,9 +338,9 @@ async function submitEdit() {
 
         <div v-if="showHidden" class="grid gap-3 mt-3">
           <div
-            v-for="article in articleStore.hiddenArticles"
-            :key="article._id"
-            class="bg-white rounded-xl shadow-sm border border-dashed border-gray-300 p-4 flex items-center gap-4 opacity-60"
+              v-for="article in articleStore.hiddenArticles"
+              :key="article._id"
+              class="bg-white rounded-xl shadow-sm border border-dashed border-gray-300 p-4 flex items-center gap-4 opacity-60"
           >
             <div class="flex-1 min-w-0">
               <p class="text-base font-medium text-gray-500 truncate line-through">
@@ -331,16 +353,16 @@ async function submitEdit() {
             </div>
             <div class="flex items-center gap-2 flex-shrink-0">
               <button
-                @click="articleStore.restoreArticle(listId, article)"
-                class="text-gray-400 hover:text-green-500 transition-colors text-sm"
-                title="Wiederherstellen"
+                  @click="articleStore.restoreArticle(listId, article)"
+                  class="text-gray-400 hover:text-green-500 transition-colors text-sm"
+                  title="Wiederherstellen"
               >
                 ↩
               </button>
               <button
-                @click="articleStore.deleteArticle(listId, article._id, article._rev)"
-                class="text-gray-400 hover:text-red-500 transition-colors text-sm"
-                title="Endgültig löschen"
+                  @click="articleStore.deleteArticle(listId, article._id, article._rev)"
+                  class="text-gray-400 hover:text-red-500 transition-colors text-sm"
+                  title="Endgültig löschen"
               >
                 ✕
               </button>
@@ -352,9 +374,9 @@ async function submitEdit() {
 
     <!-- Create modal -->
     <div
-      v-if="showModal"
-      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
-      @click.self="closeModal"
+        v-if="showModal"
+        class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+        @click.self="closeModal"
     >
       <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
         <h2 class="text-xl font-bold text-gray-800 mb-4">Neuer Artikel</h2>
@@ -362,56 +384,56 @@ async function submitEdit() {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
             <input
-              v-model="newName"
-              type="text"
-              required
-              placeholder="z.B. Milch"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                v-model="newName"
+                type="text"
+                required
+                placeholder="z.B. Milch"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div class="flex gap-3">
             <div class="flex-1">
               <label class="block text-sm font-medium text-gray-700 mb-1">Menge</label>
               <input
-                v-model.number="newQuantity"
-                type="number"
-                min="0"
-                step="any"
-                placeholder="1"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  v-model.number="newQuantity"
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="1"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div class="flex-1">
               <label class="block text-sm font-medium text-gray-700 mb-1">Einheit</label>
               <input
-                v-model="newUnit"
-                type="text"
-                placeholder="z.B. kg"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  v-model="newUnit"
+                  type="text"
+                  placeholder="z.B. kg"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Notiz</label>
             <input
-              v-model="newNote"
-              type="text"
-              placeholder="z.B. Bio-Qualität"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                v-model="newNote"
+                type="text"
+                placeholder="z.B. Bio-Qualität"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div class="flex gap-3 pt-2">
             <button
-              type="button"
-              @click="closeModal"
-              class="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+                type="button"
+                @click="closeModal"
+                class="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
             >
               Abbrechen
             </button>
             <button
-              type="submit"
-              :disabled="submitting"
-              class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
+                type="submit"
+                :disabled="submitting"
+                class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
             >
               {{ submitting ? 'Hinzufügen...' : 'Hinzufügen' }}
             </button>
@@ -422,16 +444,16 @@ async function submitEdit() {
 
     <!-- Barcode scanner -->
     <BarcodeScanner
-      v-if="showScanner"
-      @scanned="onBarcodeScanned"
-      @close="showScanner = false"
+        v-if="showScanner"
+        @scanned="onBarcodeScanned"
+        @close="showScanner = false"
     />
 
     <!-- Edit modal -->
     <div
-      v-if="showEditModal"
-      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
-      @click.self="closeEditModal"
+        v-if="showEditModal"
+        class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+        @click.self="closeEditModal"
     >
       <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
         <h2 class="text-xl font-bold text-gray-800 mb-4">Artikel bearbeiten</h2>
@@ -439,59 +461,94 @@ async function submitEdit() {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
             <input
-              v-model="editName"
-              type="text"
-              required
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                v-model="editName"
+                type="text"
+                required
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div class="flex gap-3">
             <div class="flex-1">
               <label class="block text-sm font-medium text-gray-700 mb-1">Menge</label>
               <input
-                v-model.number="editQuantity"
-                type="number"
-                min="0"
-                step="any"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  v-model.number="editQuantity"
+                  type="number"
+                  min="0"
+                  step="any"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div class="flex-1">
               <label class="block text-sm font-medium text-gray-700 mb-1">Einheit</label>
               <input
-                v-model="editUnit"
-                type="text"
-                placeholder="z.B. kg"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  v-model="editUnit"
+                  type="text"
+                  placeholder="z.B. kg"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Notiz</label>
             <input
-              v-model="editNote"
-              type="text"
-              placeholder="z.B. Bio-Qualität"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                v-model="editNote"
+                type="text"
+                placeholder="z.B. Bio-Qualität"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div class="flex gap-3 pt-2">
             <button
-              type="button"
-              @click="closeEditModal"
-              class="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+                type="button"
+                @click="closeEditModal"
+                class="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
             >
               Abbrechen
             </button>
             <button
-              type="submit"
-              :disabled="submitting"
-              class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
+                type="submit"
+                :disabled="submitting"
+                class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
             >
               {{ submitting ? 'Speichern...' : 'Speichern' }}
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Sub-issue #59: Verlassen-Bestätigungsmodal -->
+    <div
+        v-if="showLeaveModal"
+        class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+        @click.self="showLeaveModal = false"
+        data-cy="leave-confirm-modal"
+    >
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-3">Liste verlassen?</h2>
+        <p class="text-sm text-gray-600 mb-1">
+          Möchtest du die Liste
+          <span class="font-semibold text-gray-800">„{{ list?.name }}"</span>
+          wirklich verlassen?
+        </p>
+        <p class="text-xs text-gray-400 mb-6">
+          Die Liste verschwindet aus deiner Übersicht. Wenn du die letzte Person bist, wird die Liste gelöscht.
+        </p>
+        <div class="flex gap-3">
+          <button
+              @click="showLeaveModal = false"
+              class="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            Abbrechen
+          </button>
+          <button
+              @click="executeLeave"
+              class="flex-1 bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-2 text-sm font-medium transition-colors"
+              data-cy="leave-confirm-button"
+          >
+            Verlassen
+          </button>
+        </div>
       </div>
     </div>
   </div>

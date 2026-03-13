@@ -15,6 +15,10 @@ const submitting = ref(false)
 const showDeleteModal = ref(false)
 const listToDelete = ref(null)
 
+// Sub-issue #59: Verlassen-Modal
+const showLeaveModal = ref(false)
+const listToLeave = ref(null)
+
 onMounted(() => {
   store.loadLists()
 })
@@ -51,6 +55,24 @@ async function executeDelete() {
   if (!listToDelete.value) return
   await store.deleteList(listToDelete.value._id, listToDelete.value._rev)
   cancelDelete()
+}
+
+// Sub-issue #59: "Liste verlassen" – Bestätigungsabfrage öffnen
+function confirmLeave(list) {
+  listToLeave.value = list
+  showLeaveModal.value = true
+}
+
+function cancelLeave() {
+  listToLeave.value = null
+  showLeaveModal.value = false
+}
+
+// Sub-issue #59 + #60: Nach Bestätigung → leaveList Action aufrufen
+async function executeLeave() {
+  if (!listToLeave.value) return
+  await store.leaveList(listToLeave.value._id)
+  cancelLeave()
 }
 </script>
 
@@ -94,13 +116,28 @@ async function executeDelete() {
               {{ new Date(list.createdAt).toLocaleString('de-AT') }}
             </p>
           </div>
-          <button
-              @click="confirmDelete(list)"
-              class="text-gray-400 hover:text-red-500 transition-colors ml-4 mt-1"
-              title="Liste löschen"
-          >
-            ✕
-          </button>
+
+          <!-- Aktionsbuttons -->
+          <div class="flex items-center gap-2 ml-4 mt-1">
+            <!-- Sub-issue #59: "Liste verlassen"-Button -->
+            <button
+                @click="confirmLeave(list)"
+                class="text-gray-400 hover:text-orange-500 transition-colors text-sm font-medium"
+                title="Liste verlassen"
+                data-cy="leave-list-button"
+            >
+              Verlassen
+            </button>
+
+            <!-- Bestehender Löschen-Button -->
+            <button
+                @click="confirmDelete(list)"
+                class="text-gray-400 hover:text-red-500 transition-colors"
+                title="Liste löschen"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       </div>
     </main>
@@ -181,6 +218,41 @@ async function executeDelete() {
               class="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2 text-sm font-medium transition-colors"
           >
             Löschen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sub-issue #59: Verlassen-Bestätigungsmodal -->
+    <div
+        v-if="showLeaveModal"
+        class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+        @click.self="cancelLeave"
+        data-cy="leave-confirm-modal"
+    >
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-3">Liste verlassen?</h2>
+        <p class="text-sm text-gray-600 mb-1">
+          Möchtest du die Liste
+          <span class="font-semibold text-gray-800">„{{ listToLeave?.name }}"</span>
+          wirklich verlassen?
+        </p>
+        <p class="text-xs text-gray-400 mb-6">
+          Die Liste verschwindet aus deiner Übersicht. Wenn du die letzte Person bist, wird die Liste gelöscht.
+        </p>
+        <div class="flex gap-3">
+          <button
+              @click="cancelLeave"
+              class="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            Abbrechen
+          </button>
+          <button
+              @click="executeLeave"
+              class="flex-1 bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-2 text-sm font-medium transition-colors"
+              data-cy="leave-confirm-button"
+          >
+            Verlassen
           </button>
         </div>
       </div>

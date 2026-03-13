@@ -8,6 +8,7 @@ const seedLists = [
     type: 'list',
     name: 'Wocheneinkauf',
     category: 'Lebensmittel',
+    members: ['default-user'],
     createdAt: '2024-01-10T08:00:00.000Z',
   },
   {
@@ -15,6 +16,7 @@ const seedLists = [
     type: 'list',
     name: 'Baumarkt',
     category: 'Haushalt',
+    members: ['default-user'],
     createdAt: '2024-01-12T10:00:00.000Z',
   },
   {
@@ -22,6 +24,7 @@ const seedLists = [
     type: 'list',
     name: 'Apotheke',
     category: 'Gesundheit',
+    members: ['default-user'],
     createdAt: '2024-01-15T09:00:00.000Z',
   },
 ]
