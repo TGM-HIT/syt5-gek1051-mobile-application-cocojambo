@@ -54,6 +54,8 @@ describe('Shopping Lists', () => {
     cy.contains('Zu löschende Liste').should('be.visible')
 
     cy.get('button[title="Liste löschen"]').click()
+    cy.contains('Liste löschen?').should('be.visible')
+    cy.contains('button', 'Löschen').click()
     cy.contains('Zu löschende Liste').should('not.exist')
   })
 
@@ -63,6 +65,8 @@ describe('Shopping Lists', () => {
     cy.contains('button', 'Erstellen').click()
 
     cy.get('button[title="Liste löschen"]').click()
+    cy.contains('Liste löschen?').should('be.visible')
+    cy.contains('button', 'Löschen').click()
     cy.contains('Noch keine Listen vorhanden').should('be.visible')
   })
 })

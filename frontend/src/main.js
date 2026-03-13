@@ -3,11 +3,12 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import './assets/main.css'
+import { registerSW } from 'virtual:pwa-register'
 
-if (import.meta.env.DEV) {
-  const { seedDatabase } = await import('./db/seed.js')
-  await seedDatabase()
-}
+registerSW({ immediate: true })
+
+import { seedDatabase } from './db/seed.js'
+await seedDatabase()
 
 const app = createApp(App)
 
