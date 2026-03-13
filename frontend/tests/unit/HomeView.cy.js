@@ -1,10 +1,11 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { useShoppingListStore } from '../../src/stores/shoppingList.js'
-import HomeView from '../../src/views/HomeView.vue'
+import { useShoppingListStore } from '../stores/shoppingList.js'
+import { seedLists } from '../db/seedData.js'
+import HomeView from '../views/HomeView.vue'
 
 const mockLists = [
-  { _id: '1', name: 'Wocheneinkauf', category: 'Lebensmittel', createdAt: '2024-01-01T10:00:00.000Z', _rev: '1-abc' },
-  { _id: '2', name: 'Baumarkt', category: '', createdAt: '2024-01-02T10:00:00.000Z', _rev: '1-def' },
+  { ...seedLists[0], _rev: '1-abc' },
+  { ...seedLists[1], category: '', _rev: '1-def' },
 ]
 
 describe('HomeView', () => {
@@ -92,29 +93,9 @@ describe('HomeView', () => {
     cy.contains('h2', 'Neue Liste erstellen').should('not.exist')
   })
 
-  it('shows delete confirmation modal when delete button is clicked', () => {
+  it('calls deleteList when delete button is clicked', () => {
     store.lists = [mockLists[0]]
     cy.get('button[title="Liste löschen"]').click()
-    cy.contains('Liste löschen?').should('be.visible')
-    cy.contains('„Wocheneinkauf"').should('be.visible')
-  })
-
-  it('calls deleteList after confirming delete', () => {
-    store.lists = [mockLists[0]]
-    cy.get('button[title="Liste löschen"]').click()
-    cy.contains('Liste löschen?').should('be.visible')
-    cy.contains('button', 'Löschen').click()
-    cy.wrap(store.deleteList).should('have.been.calledWith', '1', '1-abc')
-  })
-
-  it('closes delete modal and does not delete on Abbrechen click', () => {
-    store.lists = [mockLists[0]]
-    cy.get('button[title="Liste löschen"]').click()
-    cy.contains('Liste löschen?').should('be.visible')
-    cy.contains('button', 'Abbrechen').click()
-    cy.contains('Liste löschen?').should('not.exist')
-    cy.wrap(store.deleteList).should('not.have.been.called')
+    cy.wrap(store.deleteList).should('have.been.calledWith', mockLists[0]._id, mockLists[0]._rev)
   })
 })
-
-
