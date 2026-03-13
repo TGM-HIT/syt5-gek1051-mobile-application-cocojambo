@@ -39,7 +39,7 @@ export const useShoppingListStore = defineStore('shoppingList', {
     async leaveList(id) {
       const doc = await db.get(id)
       const userId = getCurrentUserId()
-      const updatedMembers = (doc.members ?? [userId]).filter((m) => m !== userId)
+      const updatedMembers = (doc.members ?? [userId]).filter((m) => m !== userId) //PLATZHALTER!!! Falls members leer ist, wird der aktuelle User als einziger Member angenommen, damit er die Liste verlassen kann
 
       if (updatedMembers.length > 0) {
         await db.put({ ...doc, members: updatedMembers })
