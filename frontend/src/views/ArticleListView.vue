@@ -35,12 +35,15 @@ const newName = ref('')
 const newQuantity = ref(1)
 const newUnit = ref('')
 const newNote = ref('')
+const newPrice = ref(null)
+const newBarcode = ref(null)
 
 const editingArticle = ref(null)
 const editName = ref('')
 const editQuantity = ref(1)
 const editUnit = ref('')
 const editNote = ref('')
+const editPrice = ref(null)
 
 onMounted(async () => {
   await listStore.loadLists()
@@ -53,12 +56,16 @@ function openModal() {
   newQuantity.value = 1
   newUnit.value = ''
   newNote.value = ''
+  newPrice.value = null
+  newBarcode.value = null
   showModal.value = true
 }
 
-function onBarcodeScanned(value) {
+function onBarcodeScanned({ name, barcode, price }) {
   showScanner.value = false
-  newName.value = value
+  newName.value = name
+  newBarcode.value = barcode || null
+  newPrice.value = price || null
   newQuantity.value = 1
   newUnit.value = ''
   showModal.value = true
@@ -71,7 +78,14 @@ function closeModal() {
 async function submitCreate() {
   if (!newName.value.trim()) return
   submitting.value = true
-  await articleStore.createArticle(listId, { name: newName.value.trim(), quantity: newQuantity.value, unit: newUnit.value.trim(), note: newNote.value.trim(), price: null, barcode: null })
+  await articleStore.createArticle(listId, {
+    name: newName.value.trim(),
+    quantity: newQuantity.value,
+    unit: newUnit.value.trim(),
+    note: newNote.value.trim(),
+    price: newPrice.value ?? null,
+    barcode: newBarcode.value ?? null,
+  })
   submitting.value = false
   closeModal()
 }
@@ -82,6 +96,7 @@ function openEditModal(article) {
   editQuantity.value = article.quantity
   editUnit.value = article.unit || ''
   editNote.value = article.note || ''
+  editPrice.value = article.price
   showEditModal.value = true
 }
 
@@ -93,12 +108,23 @@ function closeEditModal() {
 async function submitEdit() {
   if (!editName.value.trim() || !editingArticle.value) return
   submitting.value = true
+  const newPrice = editPrice.value ?? null
+  // Track price change in history if price differs
+  if (newPrice !== editingArticle.value.price && newPrice != null) {
+    await articleStore.updatePrice(listId, editingArticle.value, newPrice)
+    // Reload the article with updated _rev before saving other fields
+    await articleStore.loadArticles(listId)
+    const updated = articleStore.articles.find((a) => a._id === editingArticle.value._id)
+      || articleStore.hiddenArticles.find((a) => a._id === editingArticle.value._id)
+    if (updated) editingArticle.value = updated
+  }
   await articleStore.updateArticle(listId, {
     ...editingArticle.value,
     name: editName.value.trim(),
     quantity: editQuantity.value,
     unit: editUnit.value.trim(),
     note: editNote.value.trim(),
+    price: newPrice,
   })
   submitting.value = false
   closeEditModal()
@@ -392,6 +418,17 @@ async function submitEdit() {
             </div>
           </div>
           <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Preis (€)</label>
+            <input
+              v-model.number="newPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="z.B. 2,49"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Notiz</label>
             <input
               v-model="newNote"
@@ -465,6 +502,17 @@ async function submitEdit() {
                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Preis (€)</label>
+            <input
+              v-model.number="editPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="z.B. 2,49"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Notiz</label>
