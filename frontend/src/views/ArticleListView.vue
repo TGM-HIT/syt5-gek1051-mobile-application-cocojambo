@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useArticleStore } from '../stores/article.js'
 import { useShoppingListStore } from '../stores/shoppingList.js'
 import BarcodeScanner from './BarcodeScanner.vue'
+import PriceTagScanner from './PriceTagScanner.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -541,6 +542,14 @@ async function onPriceScanned(newPrice) {
       v-if="showScanner"
       @scanned="onBarcodeScanned"
       @close="showScanner = false"
+    />
+
+    <!-- Price tag scanner -->
+    <PriceTagScanner
+      v-if="showPriceScanner"
+      :article-name="priceScanArticle?.name ?? ''"
+      @scanned="onPriceScanned"
+      @close="showPriceScanner = false"
     />
 
     <!-- Edit modal -->
