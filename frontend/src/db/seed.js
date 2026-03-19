@@ -1,7 +1,7 @@
 import { db } from './index.js'
 import { seedLists, seedArticles } from './seedData.js'
 
-const SEED_MARKER = 'seed-v2'
+const SEED_MARKER = 'seed-v3'
 
 export { seedLists, seedArticles }
 

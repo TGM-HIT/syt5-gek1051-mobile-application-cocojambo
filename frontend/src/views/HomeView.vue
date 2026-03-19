@@ -12,6 +12,11 @@ const name = ref('')
 const category = ref('')
 const submitting = ref(false)
 
+const showJoinModal = ref(false)
+const joinCode = ref('')
+const joinError = ref('')
+const joining = ref(false)
+
 const showDeleteModal = ref(false)
 const listToDelete = ref(null)
 
@@ -52,6 +57,30 @@ async function executeDelete() {
   await store.deleteList(listToDelete.value._id, listToDelete.value._rev)
   cancelDelete()
 }
+
+function openJoinModal() {
+  joinCode.value = ''
+  joinError.value = ''
+  showJoinModal.value = true
+}
+
+function closeJoinModal() {
+  showJoinModal.value = false
+}
+
+async function submitJoin() {
+  if (!joinCode.value.trim()) return
+  joining.value = true
+  joinError.value = ''
+  const list = await store.joinList(joinCode.value.trim())
+  joining.value = false
+  if (list) {
+    closeJoinModal()
+    router.push(`/list/${list._id}`)
+  } else {
+    joinError.value = 'Keine Liste mit diesem Code gefunden.'
+  }
+}
 </script>
 
 <template>
@@ -60,12 +89,20 @@ async function executeDelete() {
     <header class="bg-white shadow-sm">
       <div class="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
         <h1 class="text-2xl font-bold text-gray-800">Einkaufslisten</h1>
-        <button
-            @click="openModal"
-            class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          + Neue Liste erstellen
-        </button>
+        <div class="flex gap-2">
+          <button
+              @click="openJoinModal"
+              class="border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            Liste beitreten
+          </button>
+          <button
+              @click="openModal"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            + Neue Liste erstellen
+          </button>
+        </div>
       </div>
     </header>
 
@@ -147,6 +184,47 @@ async function executeDelete() {
                 class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
             >
               {{ submitting ? 'Erstelle...' : 'Erstellen' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Join Modal -->
+    <div
+        v-if="showJoinModal"
+        class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+        @click.self="closeJoinModal"
+    >
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Liste beitreten</h2>
+        <form @submit.prevent="submitJoin" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Einladungscode</label>
+            <input
+                v-model="joinCode"
+                type="text"
+                required
+                maxlength="6"
+                placeholder="z.B. A3X9K2"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-center tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-lg"
+            />
+          </div>
+          <p v-if="joinError" class="text-sm text-red-500">{{ joinError }}</p>
+          <div class="flex gap-3 pt-2">
+            <button
+                type="button"
+                @click="closeJoinModal"
+                class="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+            >
+              Abbrechen
+            </button>
+            <button
+                type="submit"
+                :disabled="joining"
+                class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
+            >
+              {{ joining ? 'Beitreten...' : 'Beitreten' }}
             </button>
           </div>
         </form>
