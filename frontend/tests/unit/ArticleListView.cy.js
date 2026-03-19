@@ -11,8 +11,8 @@ const mockList = {
 }
 
 const mockArticles = [
-  { ...seedArticles[0], checked: false, hidden: false, _rev: '1-a1' },
-  { ...seedArticles[1], checked: false, hidden: false, _rev: '1-a2' },
+  { ...seedArticles[0], checked: false, hidden: false, _rev: '1-a1', price: 1.49, barcode: '123', priceHistory: [{ price: 1.29, setAt: '2026-03-01T00:00:00.000Z' }, { price: 1.49, setAt: '2026-03-10T00:00:00.000Z' }] },
+  { ...seedArticles[1], checked: false, hidden: false, _rev: '1-a2', price: 3.29, barcode: null, priceHistory: [] },
 ]
 
 const mockHiddenArticles = [
@@ -36,6 +36,7 @@ describe('ArticleListView – Ausblenden & Löschen', () => {
     cy.stub(articleStore, 'hideArticle').resolves()
     cy.stub(articleStore, 'restoreArticle').resolves()
     cy.stub(articleStore, 'deleteArticle').resolves()
+    cy.stub(articleStore, 'updatePrice').resolves()
     cy.stub(listStore, 'loadLists').resolves()
 
     listStore.lists = [mockList]
@@ -123,6 +124,21 @@ describe('ArticleListView – Ausblenden & Löschen', () => {
     ]
     cy.contains('Ausgeblendete Artikel (2)').should('be.visible')
   })
+
+  it('shows price on article', () => {
+    articleStore.articles = [mockArticles[0]]
+    cy.contains('€ 1,49').should('be.visible')
+  })
+
+  it('shows price trend up indicator', () => {
+    articleStore.articles = [mockArticles[0]]
+    cy.contains('↑').should('be.visible')
+  })
+
+  it('shows total footer', () => {
+    articleStore.articles = [...mockArticles]
+    cy.contains('Gesamt').should('be.visible')
+  })
 })
 
 // seedArticles[7] = Schrauben from seed-list-2
@@ -151,6 +167,7 @@ describe('ArticleListView – Suche', () => {
     cy.stub(articleStore, 'hideArticle').resolves()
     cy.stub(articleStore, 'restoreArticle').resolves()
     cy.stub(articleStore, 'deleteArticle').resolves()
+    cy.stub(articleStore, 'updatePrice').resolves()
     cy.stub(articleStore, 'searchArticles').resolves()
     cy.stub(articleStore, 'addFromSearch').resolves()
     cy.stub(listStore, 'loadLists').resolves()
