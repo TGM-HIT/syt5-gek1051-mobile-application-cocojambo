@@ -134,13 +134,77 @@ App.vue
 
 > Als Benutzer möchte ich für Einkaufslisten Codes erstellen können, mit dem andere Benutzer diese Listen ebenfalls bearbeiten können, um meine Listen zu teilen.
 
-**Status:** Nicht implementiert
+**Status:** Implementiert
 
-Diese Funktion ist noch nicht umgesetzt. Die Implementierung würde erfordern:
+**Beteiligte Dateien:**
 
-- Generierung eines eindeutigen Share-Codes pro Liste
-- Ein Eingabefeld, um einen Code einzugeben und einer fremden Liste beizutreten
-- Verwaltung von Benutzerzugehörigkeiten pro Liste
+- `frontend/src/db/index.js` — `getDeviceId()`, `generateShareCode()`, CouchDB-URL-Konfiguration
+- `frontend/src/stores/shoppingList.js` — `createList()`, `joinList()`, `leaveList()`, `loadLists()`
+- `frontend/src/views/HomeView.vue` — "Liste beitreten"-Button und Beitreten-Modal
+- `frontend/src/views/ArticleListView.vue` — "Teilen"-Button und Share-Code-Modal
+- `frontend/.env` / `frontend/.env.example` — CouchDB-Verbindungskonfiguration
+- `couchdb/local.ini` — CouchDB CORS-Konfiguration
+- `docker-compose.yaml` — Einbindung der CouchDB-Konfigurationsdatei
+
+**Konzept:**
+
+Die Sharing-Funktion basiert auf drei Säulen:
+
+1. **Geräte-Identifikation:** Jedes Gerät erhält beim ersten App-Start eine eindeutige ID (`deviceId`), die in `localStorage` gespeichert wird. Es wird `crypto.getRandomValues()` statt `crypto.randomUUID()` verwendet, da letzteres nur in sicheren Kontexten (HTTPS/localhost) verfügbar ist.
+
+2. **Mitgliedschaft:** Jede Liste enthält ein `members`-Array mit den `deviceId`s aller Geräte, die Zugriff haben. `loadLists()` filtert die Anzeige auf Listen, in denen die eigene `deviceId` enthalten ist.
+
+3. **Share-Codes:** Jede Liste erhält bei der Erstellung einen zufälligen 6-stelligen alphanumerischen Code (`shareCode`). Zeichen wie O/0/I/1 werden ausgelassen, um Verwechslungen zu vermeiden.
+
+**Technischer Ablauf — Liste teilen:**
+
+1. Der Besitzer öffnet eine Liste in `ArticleListView.vue` und klickt auf "Teilen".
+2. Ein Modal zeigt den 6-stelligen Share-Code der Liste an.
+3. Der Besitzer teilt diesen Code mündlich, per Chat oder auf anderem Weg.
+
+**Technischer Ablauf — Liste beitreten:**
+
+1. Ein anderer Benutzer klickt in `HomeView.vue` auf "Liste beitreten".
+2. Im Modal gibt er den 6-stelligen Code ein.
+3. `joinList(code)` durchsucht die lokale PouchDB nach einem Listendokument mit passendem `shareCode`.
+4. Wird die Liste gefunden, wird die eigene `deviceId` zum `members`-Array hinzugefügt und das Dokument via `db.put()` aktualisiert.
+5. Durch die PouchDB/CouchDB-Synchronisation wird die Änderung an alle Geräte verteilt.
+6. Der Benutzer wird automatisch zur beigetretenen Liste navigiert.
+
+**Dokumentstruktur (erweitert):**
+
+```json
+{
+  "_id": "1709742000000",
+  "type": "list",
+  "name": "Wocheneinkauf",
+  "category": "Lebensmittel",
+  "members": ["a1b2c3d4e5f6...", "f6e5d4c3b2a1..."],
+  "shareCode": "A3X9K2",
+  "createdAt": "2026-03-06T12:00:00.000Z"
+}
+```
+
+**Netzwerk-Konfiguration:**
+
+Damit die Synchronisation zwischen verschiedenen Geräten funktioniert, sind zwei Konfigurationen notwendig:
+
+1. **CouchDB-URL:** Die Verbindung zur CouchDB wird über einzelne Umgebungsvariablen in `frontend/.env` konfiguriert (siehe `frontend/.env.example` als Vorlage). Die Variablen `VITE_COUCHDB_USER`, `VITE_COUCHDB_PASSWORD`, `VITE_COUCHDB_HOST`, `VITE_COUCHDB_PORT` und `VITE_COUCHDB_DB` werden in `db/index.js` zur Remote-URL zusammengesetzt. `VITE_COUCHDB_HOST` muss auf die IP des CouchDB-Servers gesetzt werden (nicht `localhost`), damit andere Geräte im Netzwerk die gleiche Datenbank erreichen.
+
+2. **CORS:** CouchDB muss Cross-Origin-Requests erlauben, da Frontend (z.B. Port 5173) und CouchDB (Port 5984) unterschiedliche Origins sind. Die CORS-Konfiguration wird über `couchdb/local.ini` eingebunden:
+
+   ```ini
+   [httpd]
+   enable_cors = true
+
+   [cors]
+   origins = *
+   methods = GET, PUT, POST, HEAD, DELETE
+   credentials = true
+   headers = accept, authorization, content-type, origin, referer
+   ```
+
+   Diese Datei wird in `docker-compose.yaml` als Volume gemountet.
 
 ---
 
@@ -205,16 +269,18 @@ Diese Funktion ist noch nicht umgesetzt. Die Implementierung würde erfordern:
 
 > Als Benutzer möchte ich die Möglichkeit haben, Listen die ich bearbeiten kann zu "verlassen", um nicht unnötige Listen zu speichern. Sobald die letzte Person eine Liste verlässt, soll die Liste gelöscht werden.
 
-**Status:** Teilweise implementiert
+**Status:** Implementiert
 
 **Beteiligte Dateien:**
 
-- `frontend/src/stores/shoppingList.js` — Delete-Logik
+- `frontend/src/stores/shoppingList.js` — `leaveList()`-Logik
 
 **Technischer Ablauf:**
 
-1. `deleteList(id, rev)` entfernt die Liste permanent via `db.remove(id, rev)`.
-2. Da die Teilen-Funktion (Story 5) noch nicht implementiert ist, gibt es keine Multi-User-Logik — jeder Benutzer kann seine Listen direkt löschen.
+1. `leaveList(id)` entfernt die eigene `deviceId` aus dem `members`-Array der Liste.
+2. Falls noch andere Mitglieder vorhanden sind, wird das aktualisierte Dokument via `db.put()` gespeichert — die Liste bleibt für die anderen Mitglieder bestehen.
+3. Falls `members` nach dem Entfernen leer ist (letztes Mitglied verlässt), werden die Liste und alle zugehörigen Artikel via `db.bulkDocs()` mit `_deleted: true` gelöscht.
+4. Anschließend wird `loadLists()` aufgerufen, um die Ansicht zu aktualisieren.
 
 ---
 

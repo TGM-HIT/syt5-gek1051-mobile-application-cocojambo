@@ -27,6 +27,7 @@ services:
      - couchdb_data:/opt/couchdb/data
      - couchdb_config:/opt/couchdb/etc/local.d
      - couchdb_log:/opt/couchdb/var/log
+     - ./couchdb/local.ini:/opt/couchdb/etc/local.d/local.ini
     environment:
       COUCHDB_USER: ${APP_USER}
       COUCHDB_PASSWORD: ${APP_PASSWORD}

@@ -31,21 +31,25 @@ npm install
 cp .env.example .env
 ```
 
-In der `.env` die CouchDB-URL anpassen:
+Passe die Werte in der `.env` an deine Umgebung an. **Wichtig:** `VITE_COUCHDB_HOST` muss auf die tatsächliche IP-Adresse des CouchDB-Servers gesetzt werden (nicht `localhost`), damit andere Geräte im Netzwerk synchronisieren können.
 
-```
-VITE_COUCHDB_URL=http://admin:password@localhost:5984/shopping_lists
+### 3. CouchDB starten
+
+```bash
+docker compose up -d
 ```
 
-### 3. Entwicklungsserver starten
+Die CouchDB-Zugangsdaten werden in der Root-`.env` konfiguriert (`APP_USER`, `APP_PASSWORD`). Die CORS-Konfiguration in `couchdb/local.ini` erlaubt Cross-Origin-Requests, was für die Kommunikation zwischen Frontend und CouchDB notwendig ist.
+
+### 4. Entwicklungsserver starten
 
 ```bash
 npm run dev
 ```
 
-Die App ist dann unter `http://localhost:5173` erreichbar.
+Die App ist dann unter `http://localhost:5173` bzw. `http://[YOUR_IP]:5173` erreichbar.
 
-### 4. Produktions-Build
+### 5. Produktions-Build
 
 ```bash
 npm run build

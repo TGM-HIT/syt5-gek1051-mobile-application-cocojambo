@@ -16,6 +16,9 @@ export default defineConfig({
     nodePolyfills(),
     VitePWA({ registerType: 'autoUpdate' }),
   ],
+  server: {
+    host: true,
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
