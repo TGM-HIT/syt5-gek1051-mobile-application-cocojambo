@@ -1,9 +1,13 @@
+import { getDeviceId } from './index.js'
+
 export const seedLists = [
   {
     _id: 'seed-list-1',
     type: 'list',
     name: 'Wocheneinkauf',
     category: 'Lebensmittel',
+    members: [getDeviceId()],
+    shareCode: 'WCH3NK',
     createdAt: '2024-01-10T08:00:00.000Z',
   },
   {
@@ -11,6 +15,8 @@ export const seedLists = [
     type: 'list',
     name: 'Baumarkt',
     category: 'Haushalt',
+    members: [getDeviceId()],
+    shareCode: 'BAU4MK',
     createdAt: '2024-01-12T10:00:00.000Z',
   },
   {
@@ -18,6 +24,8 @@ export const seedLists = [
     type: 'list',
     name: 'Apotheke',
     category: 'Gesundheit',
+    members: [getDeviceId()],
+    shareCode: 'APT3KE',
     createdAt: '2024-01-15T09:00:00.000Z',
   },
   {

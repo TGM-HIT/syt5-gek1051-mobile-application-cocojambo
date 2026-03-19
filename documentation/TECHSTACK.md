@@ -96,7 +96,13 @@ Hier wird **CouchDB** als zentrale Datenbank gewählt, sowie **PouchDB** als lok
 
 ## Synchronisationsansatz
 
-Um Konsistenzprobleme und doppelte Einträge in den Listen zu verhindern, nutzen wir den Timestamp als Ansatz. Beispielsweise können zwei Leute gleichzeitig ohne Internet ein Produkt abhaken, ohne zu wissen, dass der andere es schon abgehakt hat. Deswegen wird Bei jedem Abhaken von einem Produkt der Timestamp mitgeschickt. So können dann die Abhakungen chronologisch angezeigt werden und bei wieder verfügbarem Internet Konflikte verhindern. Beispielsweise kann man es sich so ausmachen, dass die Person die am frühesten das Produkt abgehakt hat, dieses kaufen soll.
+Um Konsistenzprobleme und doppelte Einträge in den Listen zu verhindern, nutzen wir den Timestamp als Ansatz. Beispielsweise können zwei Leute gleichzeitig ohne Internet ein Produkt abhaken, ohne zu wissen, dass der andere es schon abgehakt hat. Deswegen wird bei jedem Abhaken von einem Produkt der Timestamp mitgeschickt. So können dann die Abhakungen chronologisch unter dem Artikel angezeigt werden — man sieht, wer das Produkt wann abgehakt hat. Beispielsweise kann man es sich so ausmachen, dass die Person die am frühesten das Produkt abgehakt hat, dieses kaufen soll.
+
+### Konfliktstrategie: Delete wins
+
+Bei der Synchronisation von Offline-Änderungen kann es zu Konflikten kommen. Ein typisches Szenario: Person A bearbeitet einen Artikel offline (z.B. ändert die Menge), während Person B denselben Artikel offline löscht. Standardmäßig würde CouchDB den Konflikt chronologisch lösen — wenn Person A nach Person B bearbeitet, würde der Artikel wiederhergestellt werden.
+
+Dieses Verhalten ist unerwünscht. In unserer Anwendung gilt das Prinzip **"Delete wins"**: Wenn ein Artikel von einem Benutzer gelöscht (ausgeblendet) wird, bleibt er gelöscht — unabhängig davon, ob ein anderer Benutzer den Artikel zeitlich danach bearbeitet hat. Die Löschung hat immer Vorrang, da ein Benutzer bewusst entschieden hat, dass der Artikel nicht mehr benötigt wird. Eine nachträgliche Bearbeitung durch einen anderen Benutzer, der die Löschung noch nicht synchronisiert bekommen hat, soll diese Entscheidung nicht rückgängig machen.
 
 ## Schnittstelle
 

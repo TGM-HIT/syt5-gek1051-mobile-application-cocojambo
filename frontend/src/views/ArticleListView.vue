@@ -18,6 +18,7 @@ const showModal = ref(false)
 const showEditModal = ref(false)
 const showScanner = ref(false)
 const showHidden = ref(false)
+const showShareModal = ref(false)
 const submitting = ref(false)
 const searchQuery = ref('')
 
@@ -195,6 +196,13 @@ async function onPriceScanned(newPrice) {
             {{ list.category }}
           </span>
         </div>
+        <button
+          @click="showShareModal = true"
+          class="border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium px-3 py-2 rounded-lg transition-colors"
+          title="Liste teilen"
+        >
+          Teilen
+        </button>
         <button
           @click="showScanner = true"
           class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-3 py-2 rounded-lg transition-colors"
@@ -551,6 +559,28 @@ async function onPriceScanned(newPrice) {
       @scanned="onPriceScanned"
       @close="showPriceScanner = false"
     />
+    <!-- Share modal -->
+    <div
+      v-if="showShareModal"
+      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      @click.self="showShareModal = false"
+    >
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6 text-center">
+        <h2 class="text-xl font-bold text-gray-800 mb-2">Liste teilen</h2>
+        <p class="text-sm text-gray-500 mb-4">Teile diesen Code, damit andere Benutzer der Liste beitreten können.</p>
+        <div class="bg-gray-100 rounded-xl py-4 px-6 mb-4">
+          <span class="text-3xl font-mono font-bold tracking-widest text-gray-800">
+            {{ list?.shareCode ?? '------' }}
+          </span>
+        </div>
+        <button
+          @click="showShareModal = false"
+          class="w-full border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+        >
+          Schliessen
+        </button>
+      </div>
+    </div>
 
     <!-- Edit modal -->
     <div

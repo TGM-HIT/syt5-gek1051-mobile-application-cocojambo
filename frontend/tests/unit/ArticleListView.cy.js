@@ -273,3 +273,58 @@ describe('ArticleListView – Suche', () => {
     cy.contains('2 l').should('be.visible')
   })
 })
+
+describe('ArticleListView – Teilen', () => {
+  let articleStore, listStore
+
+  beforeEach(() => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+
+    articleStore = useArticleStore()
+    listStore = useShoppingListStore()
+
+    cy.stub(articleStore, 'loadArticles').resolves()
+    cy.stub(articleStore, 'createArticle').resolves()
+    cy.stub(articleStore, 'updateArticle').resolves()
+    cy.stub(articleStore, 'toggleChecked').resolves()
+    cy.stub(articleStore, 'hideArticle').resolves()
+    cy.stub(articleStore, 'restoreArticle').resolves()
+    cy.stub(articleStore, 'deleteArticle').resolves()
+    cy.stub(listStore, 'loadLists').resolves()
+
+    listStore.lists = [mockList]
+
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/list/:id', component: ArticleListView }],
+    })
+
+    cy.wrap(router.push(`/list/${mockList._id}`)).then(() => {
+      cy.mount(ArticleListView, {
+        global: { plugins: [pinia, router] },
+      })
+    })
+  })
+
+  it('shows the share button', () => {
+    cy.contains('button', 'Teilen').should('be.visible')
+  })
+
+  it('opens share modal on button click', () => {
+    cy.contains('button', 'Teilen').click()
+    cy.contains('h2', 'Liste teilen').should('be.visible')
+  })
+
+  it('displays the share code in the modal', () => {
+    cy.contains('button', 'Teilen').click()
+    cy.contains(mockList.shareCode).should('be.visible')
+  })
+
+  it('closes share modal on Schliessen click', () => {
+    cy.contains('button', 'Teilen').click()
+    cy.contains('h2', 'Liste teilen').should('be.visible')
+    cy.contains('button', 'Schliessen').click()
+    cy.contains('h2', 'Liste teilen').should('not.exist')
+  })
+})
