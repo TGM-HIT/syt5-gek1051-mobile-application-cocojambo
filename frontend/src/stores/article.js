@@ -19,7 +19,7 @@ export const useArticleStore = defineStore('article', {
       this.hiddenArticles = all.filter((doc) => doc.hidden)
     },
 
-    async createArticle(listId, name, quantity, unit, note) {
+    async createArticle(listId, { name, quantity, unit, note, price, barcode } = {}) {
       await db.put({
         _id: Date.now().toString(),
         type: 'article',
@@ -28,7 +28,11 @@ export const useArticleStore = defineStore('article', {
         quantity: quantity || 1,
         unit: unit || '',
         note: note || '',
+        price: price ?? null,
+        barcode: barcode ?? null,
+        priceHistory: [],
         checked: false,
+        hidden: false,
         createdAt: new Date().toISOString(),
       })
       await this.loadArticles(listId)
@@ -59,6 +63,15 @@ export const useArticleStore = defineStore('article', {
       await this.loadArticles(listId)
     },
 
+    async updatePrice(listId, article, newPrice) {
+      if (article.price === newPrice) return
+      const history = [...(article.priceHistory || [])]
+      history.push({ price: newPrice, setAt: new Date().toISOString() })
+      if (history.length > 20) history.splice(0, history.length - 20)
+      await db.put({ ...article, price: newPrice, priceHistory: history })
+      await this.loadArticles(listId)
+    },
+
     async searchArticles(query, currentListId) {
       if (!query.trim()) {
         this.searchResults = { inCurrentList: [], inOtherLists: [], inPast: [] }
@@ -77,7 +90,13 @@ export const useArticleStore = defineStore('article', {
     },
 
     async addFromSearch(currentListId, article) {
-      await this.createArticle(currentListId, article.name, article.quantity, article.unit)
+      await this.createArticle(currentListId, {
+        name: article.name,
+        quantity: article.quantity,
+        unit: article.unit,
+        note: article.note,
+        barcode: article.barcode || null,
+      })
       this.searchResults = { inCurrentList: [], inOtherLists: [], inPast: [] }
     },
   },
