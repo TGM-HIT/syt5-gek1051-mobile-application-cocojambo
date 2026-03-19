@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { useShoppingListStore } from '../stores/shoppingList.js'
-import { seedLists } from '../db/seedData.js'
-import HomeView from '../views/HomeView.vue'
+import { useShoppingListStore } from '../../src/stores/shoppingList.js'
+import { seedLists } from '../../src/db/seedData.js'
+import HomeView from '../../src/views/HomeView.vue'
 
 const mockLists = [
   { ...seedLists[0], _rev: '1-abc' },
