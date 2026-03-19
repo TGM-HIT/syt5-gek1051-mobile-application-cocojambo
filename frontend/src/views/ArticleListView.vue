@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useArticleStore } from '../stores/article.js'
 import { useShoppingListStore } from '../stores/shoppingList.js'
@@ -128,6 +128,48 @@ async function submitEdit() {
   })
   submitting.value = false
   closeEditModal()
+}
+
+function formatPrice(price) {
+  if (price == null) return null
+  return '€ ' + price.toFixed(2).replace('.', ',')
+}
+
+const expandedPriceId = ref(null)
+
+function togglePriceHistory(articleId) {
+  expandedPriceId.value = expandedPriceId.value === articleId ? null : articleId
+}
+
+function priceTrend(article) {
+  if (!article.priceHistory || article.priceHistory.length < 2) return null
+  const prev = article.priceHistory[article.priceHistory.length - 2].price
+  const curr = article.priceHistory[article.priceHistory.length - 1].price
+  if (curr > prev) return 'up'
+  if (curr < prev) return 'down'
+  return null
+}
+
+const listTotal = computed(() => {
+  return articleStore.articles
+    .filter((a) => !a.checked && a.price != null)
+    .reduce((sum, a) => sum + a.price * (a.quantity || 1), 0)
+})
+
+const showPriceScanner = ref(false)
+const priceScanArticle = ref(null)
+
+function openPriceScanner(article) {
+  priceScanArticle.value = article
+  showPriceScanner.value = true
+}
+
+async function onPriceScanned(newPrice) {
+  showPriceScanner.value = false
+  if (priceScanArticle.value && newPrice != null) {
+    await articleStore.updatePrice(listId, priceScanArticle.value, newPrice)
+  }
+  priceScanArticle.value = null
 }
 </script>
 
@@ -275,7 +317,7 @@ async function submitEdit() {
     </div>
 
     <!-- Article list -->
-    <main class="max-w-3xl mx-auto px-4 py-6">
+    <main class="max-w-3xl mx-auto px-4 py-6" :class="{ 'pb-20': listTotal > 0 }">
       <div v-if="articleStore.articles.length === 0" class="text-center text-gray-400 mt-16">
         <p class="text-lg">Noch keine Artikel vorhanden.</p>
         <p class="text-sm mt-1">Füge deinen ersten Artikel hinzu!</p>
@@ -309,10 +351,36 @@ async function submitEdit() {
               <span v-if="article.unit">{{ article.unit }}</span>
             </p>
             <p v-if="article.note" class="text-xs text-gray-500 mt-0.5 italic">{{ article.note }}</p>
+            <p v-if="article.price != null" class="text-xs text-gray-500 mt-0.5">
+              <span
+                @click="togglePriceHistory(article._id)"
+                class="cursor-pointer hover:text-blue-500"
+              >
+                {{ formatPrice(article.price) }}
+              </span>
+              <span v-if="priceTrend(article) === 'up'" class="text-red-500 ml-1">↑</span>
+              <span v-if="priceTrend(article) === 'down'" class="text-green-500 ml-1">↓</span>
+            </p>
+            <!-- Price history expandable -->
+            <div
+              v-if="expandedPriceId === article._id && article.priceHistory && article.priceHistory.length > 0"
+              class="mt-1 text-xs text-gray-400 space-y-0.5"
+            >
+              <p v-for="(entry, idx) in article.priceHistory" :key="idx">
+                {{ new Date(entry.setAt).toLocaleDateString('de-AT') }}: {{ formatPrice(entry.price) }}
+              </p>
+            </div>
           </div>
 
           <!-- Actions -->
           <div class="flex items-center gap-2 flex-shrink-0">
+            <button
+              @click="openPriceScanner(article)"
+              class="text-gray-400 hover:text-green-500 transition-colors"
+              title="Preis scannen"
+            >
+              📷
+            </button>
             <button
               @click="openEditModal(article)"
               class="text-gray-400 hover:text-blue-500 transition-colors"
@@ -375,6 +443,17 @@ async function submitEdit() {
         </div>
       </div>
     </main>
+
+    <!-- Total footer -->
+    <div
+      v-if="listTotal > 0"
+      class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40"
+    >
+      <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
+        <span class="text-sm font-medium text-gray-600">Gesamt</span>
+        <span class="text-lg font-bold text-gray-800">{{ formatPrice(listTotal) }}</span>
+      </div>
+    </div>
 
     <!-- Create modal -->
     <div
