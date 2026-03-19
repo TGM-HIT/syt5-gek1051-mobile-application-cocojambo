@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { useShoppingListStore } from '../stores/shoppingList.js'
-import { seedLists } from '../db/seedData.js'
-import HomeView from '../views/HomeView.vue'
+import { useShoppingListStore } from '../../src/stores/shoppingList.js'
+import { seedLists } from '../../src/db/seedData.js'
+import HomeView from '../../src/views/HomeView.vue'
 
 const mockLists = [
   { ...seedLists[0], _rev: '1-abc' },
@@ -93,9 +93,10 @@ describe('HomeView', () => {
     cy.contains('h2', 'Neue Liste erstellen').should('not.exist')
   })
 
-  it('calls deleteList when delete button is clicked', () => {
+  it('calls deleteList when delete is confirmed', () => {
     store.lists = [mockLists[0]]
     cy.get('button[title="Liste löschen"]').click()
+    cy.contains('button', 'Löschen').click()
     cy.wrap(store.deleteList).should('have.been.calledWith', mockLists[0]._id, mockLists[0]._rev)
   })
 })

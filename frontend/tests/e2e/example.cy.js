@@ -57,7 +57,6 @@ describe('Shopping Lists', () => {
     cy.contains('button', 'Erstellen').click()
     cy.contains('Zu löschende Liste').should('be.visible')
 
-    // Click the delete button next to the specific list
     cy.contains('Zu löschende Liste')
       .closest('.bg-white')
       .find('button[title="Liste löschen"]')
@@ -68,7 +67,7 @@ describe('Shopping Lists', () => {
   })
 
   it('shows empty state after all lists are deleted', () => {
-    // Delete all seed lists (3) plus the seed marker one by one
+    // Delete all seed lists (3) one by one
     const seedListNames = ['Wocheneinkauf', 'Baumarkt', 'Apotheke']
 
     seedListNames.forEach((name) => {

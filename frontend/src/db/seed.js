@@ -6,6 +6,9 @@ const SEED_MARKER = 'seed-v2'
 export { seedLists, seedArticles }
 
 export async function seedDatabase() {
+  // Skip seeding when Cypress E2E tests have cleared the DB
+  if (localStorage.getItem('__cypress_skip_seed')) return
+
   try {
     await db.get(SEED_MARKER)
     return // already seeded
