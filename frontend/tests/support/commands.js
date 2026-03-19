@@ -35,4 +35,5 @@
 Cypress.Commands.add('clearPouchDB', () => {
   cy.window().then((win) => win.__destroyDB())
   cy.reload()
+  cy.window().should('have.property', '__destroyDB')
 })
