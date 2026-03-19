@@ -9,10 +9,16 @@ const couchPort = import.meta.env.VITE_COUCHDB_PORT || '5984'
 const couchDb = import.meta.env.VITE_COUCHDB_DB || 'shopping_lists'
 const remoteUrl = `http://${couchUser}:${couchPassword}@${couchHost}:${couchPort}/${couchDb}`
 
-db.sync(remoteUrl, { live: true, retry: true })
+const syncHandler = db.sync(remoteUrl, { live: true, retry: true })
 
 // Expose helpers for Cypress tests: destroy for isolation, __db for stubbing.
-window.__destroyDB = () => db.destroy()
+window.__destroyDB = () =>
+  new Promise((resolve) => {
+    syncHandler.on('complete', () => {
+      db.destroy().then(resolve).catch(resolve)
+    })
+    syncHandler.cancel()
+  })
 window.__db = db
 
 function getDeviceId() {

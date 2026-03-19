@@ -1,10 +1,11 @@
 import App from '../../src/App.vue'
-import { createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
 
 describe('App', () => {
   it('mounts without errors', () => {
     const pinia = createPinia()
+    setActivePinia(pinia)
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [{ path: '/', component: { template: '<div>Home</div>' } }],
