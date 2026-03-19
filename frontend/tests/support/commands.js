@@ -33,19 +33,14 @@
  * IndexedDB connection cleanly) then reloads so the app starts fresh.
  */
 Cypress.Commands.add('clearPouchDB', () => {
-  cy.window().then((win) =>
-    new Cypress.Promise((resolve) => {
-      // Delete all PouchDB IndexedDB databases directly to avoid race conditions
-      const dbNames = ['_pouch_shopping_lists']
-      let remaining = dbNames.length
-      dbNames.forEach((name) => {
-        const req = win.indexedDB.deleteDatabase(name)
-        req.onsuccess = req.onerror = req.onblocked = () => {
-          if (--remaining === 0) resolve()
-        }
-      })
-    }),
-  )
+  cy.window().then((win) => {
+    // Set flag before reload so seedDatabase() skips on next load
+    win.localStorage.setItem('__cypress_skip_seed', '1')
+    return new Cypress.Promise((resolve) => {
+      const req = win.indexedDB.deleteDatabase('_pouch_shopping_lists')
+      req.onsuccess = req.onerror = req.onblocked = () => resolve()
+    })
+  })
   cy.reload()
   cy.window().should('have.property', '__destroyDB')
 })
