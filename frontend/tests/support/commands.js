@@ -25,17 +25,16 @@
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
 
 /**
- * Deletes the PouchDB IndexedDB database and reloads the page so the app
- * starts fresh with an empty database. Requires a page to already be visited.
- */
-/**
  * Destroys the PouchDB database via the app's exposed helper (closes the
  * IndexedDB connection cleanly) then reloads so the app starts fresh.
+ * Also sets a test username so the username prompt is skipped.
  */
 Cypress.Commands.add('clearPouchDB', () => {
   cy.window().then((win) => {
     // Set flag before reload so seedDatabase() skips on next load
     win.localStorage.setItem('__cypress_skip_seed', '1')
+    // Set a test username so the username prompt does not appear
+    win.localStorage.setItem('username', 'TestUser#abcd')
     return new Cypress.Promise((resolve) => {
       const req = win.indexedDB.deleteDatabase('_pouch_shopping_lists')
       req.onsuccess = req.onerror = req.onblocked = () => resolve()

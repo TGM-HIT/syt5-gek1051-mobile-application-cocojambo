@@ -21,15 +21,21 @@ window.__destroyDB = () =>
   })
 window.__db = db
 
-function getDeviceId() {
-  let id = localStorage.getItem('deviceId')
-  if (!id) {
-    const arr = new Uint8Array(16)
-    crypto.getRandomValues(arr)
-    id = Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('')
-    localStorage.setItem('deviceId', id)
-  }
-  return id
+function getUsername() {
+  return localStorage.getItem('username')
+}
+
+function setUsername(displayName) {
+  const arr = new Uint8Array(2)
+  crypto.getRandomValues(arr)
+  const suffix = Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('')
+  const username = `${displayName}#${suffix}`
+  localStorage.setItem('username', username)
+  return username
+}
+
+function hasUsername() {
+  return !!localStorage.getItem('username')
 }
 
 function generateShareCode() {
@@ -41,4 +47,4 @@ function generateShareCode() {
   return code
 }
 
-export { db, getDeviceId, generateShareCode }
+export { db, getUsername, setUsername, hasUsername, generateShareCode }

@@ -1,34 +1,37 @@
-import { getDeviceId } from './index.js'
+import { getUsername } from './index.js'
 
-export const seedLists = [
-  {
-    _id: 'seed-list-1',
-    type: 'list',
-    name: 'Wocheneinkauf',
-    category: 'Lebensmittel',
-    members: [getDeviceId()],
-    shareCode: 'WCH3NK',
-    createdAt: '2024-01-10T08:00:00.000Z',
-  },
-  {
-    _id: 'seed-list-2',
-    type: 'list',
-    name: 'Baumarkt',
-    category: 'Haushalt',
-    members: [getDeviceId()],
-    shareCode: 'BAU4MK',
-    createdAt: '2024-01-12T10:00:00.000Z',
-  },
-  {
-    _id: 'seed-list-3',
-    type: 'list',
-    name: 'Apotheke',
-    category: 'Gesundheit',
-    members: [getDeviceId()],
-    shareCode: 'APT3KE',
-    createdAt: '2024-01-15T09:00:00.000Z',
-  },
-]
+export function getSeedLists() {
+  const username = getUsername()
+  return [
+    {
+      _id: 'seed-list-1',
+      type: 'list',
+      name: 'Wocheneinkauf',
+      category: 'Lebensmittel',
+      members: [username],
+      shareCode: 'WCH3NK',
+      createdAt: '2024-01-10T08:00:00.000Z',
+    },
+    {
+      _id: 'seed-list-2',
+      type: 'list',
+      name: 'Baumarkt',
+      category: 'Haushalt',
+      members: [username],
+      shareCode: 'BAU4MK',
+      createdAt: '2024-01-12T10:00:00.000Z',
+    },
+    {
+      _id: 'seed-list-3',
+      type: 'list',
+      name: 'Apotheke',
+      category: 'Gesundheit',
+      members: [username],
+      shareCode: 'APT3KE',
+      createdAt: '2024-01-15T09:00:00.000Z',
+    },
+  ]
+}
 
 export const seedArticles = [
   // Wocheneinkauf

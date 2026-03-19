@@ -2,11 +2,19 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { useArticleStore } from '../../src/stores/article.js'
 import { useShoppingListStore } from '../../src/stores/shoppingList.js'
-import { seedLists, seedArticles } from '../../src/db/seedData.js'
+import { seedArticles } from '../../src/db/seedData.js'
 import ArticleListView from '../../src/views/ArticleListView.vue'
 
+const TEST_USERNAME = 'TestUser#abcd'
+
 const mockList = {
-  ...seedLists[0],
+  _id: 'seed-list-1',
+  type: 'list',
+  name: 'Wocheneinkauf',
+  category: 'Lebensmittel',
+  members: [TEST_USERNAME],
+  shareCode: 'WCH3NK',
+  createdAt: '2024-01-10T08:00:00.000Z',
   _rev: '1-abc',
 }
 
@@ -23,6 +31,7 @@ describe('ArticleListView – Ausblenden & Löschen', () => {
   let articleStore, listStore
 
   beforeEach(() => {
+    localStorage.setItem('username', TEST_USERNAME)
     const pinia = createPinia()
     setActivePinia(pinia)
 
@@ -138,6 +147,7 @@ describe('ArticleListView – Suche', () => {
   let articleStore, listStore
 
   beforeEach(() => {
+    localStorage.setItem('username', TEST_USERNAME)
     const pinia = createPinia()
     setActivePinia(pinia)
 
@@ -261,6 +271,7 @@ describe('ArticleListView – Teilen', () => {
   let articleStore, listStore
 
   beforeEach(() => {
+    localStorage.setItem('username', TEST_USERNAME)
     const pinia = createPinia()
     setActivePinia(pinia)
 
