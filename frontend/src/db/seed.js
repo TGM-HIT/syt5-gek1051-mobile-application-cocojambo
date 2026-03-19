@@ -6,6 +6,9 @@ const SEED_MARKER = 'seed-v2'
 export { seedLists, seedArticles }
 
 export async function seedDatabase() {
+  // Skip seeding during Cypress E2E tests so clearPouchDB produces a truly empty DB
+  if (window.Cypress) return
+
   try {
     await db.get(SEED_MARKER)
     return // already seeded
