@@ -152,7 +152,7 @@ describe('BarcodeScanner – Manuelle Eingabe & API', () => {
     cy.mount(BarcodeScanner, { props: { onScanned } })
     submitManual('4000417025005')
     cy.contains('button', 'Zur Liste hinzufügen').click()
-    cy.get('@scannedSpy').should('have.been.calledWith', 'Testprodukt')
+    cy.get('@scannedSpy').should('have.been.calledWith', { name: 'Testprodukt', barcode: '4000417025005', price: null })
   })
 
   it('emits close when Abbrechen is clicked in the popup', () => {

@@ -291,6 +291,7 @@ describe('ArticleListView – Teilen', () => {
     cy.stub(articleStore, 'hideArticle').resolves()
     cy.stub(articleStore, 'restoreArticle').resolves()
     cy.stub(articleStore, 'deleteArticle').resolves()
+    cy.stub(articleStore, 'updatePrice').resolves()
     cy.stub(listStore, 'loadLists').resolves()
 
     listStore.lists = [mockList]
