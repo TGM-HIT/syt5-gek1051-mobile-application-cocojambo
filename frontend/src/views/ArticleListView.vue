@@ -104,6 +104,47 @@ async function submitEdit() {
   submitting.value = false
   closeEditModal()
 }
+
+function escapeCsvField(value) {
+  const str = value == null ? '' : String(value)
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return '"' + str.replace(/"/g, '""') + '"'
+  }
+  return str
+}
+
+function exportToCsv() {
+  const allArticles = [
+    ...articleStore.articles,
+    ...articleStore.hiddenArticles,
+  ]
+
+  const header = ['Name', 'Menge', 'Einheit', 'Notiz', 'Erledigt']
+  const rows = allArticles.map((a) => [
+    escapeCsvField(a.name),
+    escapeCsvField(a.quantity),
+    escapeCsvField(a.unit || ''),
+    escapeCsvField(a.note || ''),
+    a.checked ? 'Ja' : 'Nein',
+  ])
+
+  const csvContent =
+    [header, ...rows].map((row) => row.join(',')).join('\r\n')
+
+  // BOM prefix so Excel opens UTF-8 correctly
+  const blob = new Blob(['\uFEFF' + csvContent], {
+    type: 'text/csv;charset=utf-8;',
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  const listName = list.value?.name ?? 'Liste'
+  link.href = url
+  link.download = `${listName}_export.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
 </script>
 
 <template>
@@ -127,6 +168,14 @@ async function submitEdit() {
             {{ list.category }}
           </span>
         </div>
+        <button
+          @click="exportToCsv"
+          class="border border-green-600 text-green-600 hover:bg-green-50 font-medium px-3 py-2 rounded-lg transition-colors"
+          title="Als CSV exportieren"
+          id="btn-export-csv"
+        >
+          CSV
+        </button>
         <button
           @click="showShareModal = true"
           class="border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium px-3 py-2 rounded-lg transition-colors"
