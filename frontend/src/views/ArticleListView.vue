@@ -71,7 +71,7 @@ function closeModal() {
 async function submitCreate() {
   if (!newName.value.trim()) return
   submitting.value = true
-  await articleStore.createArticle(listId, { name: newName.value.trim(), quantity: newQuantity.value, unit: newUnit.value.trim(), note: newNote.value.trim() })
+  await articleStore.createArticle(listId, { name: newName.value.trim(), quantity: newQuantity.value, unit: newUnit.value.trim(), note: newNote.value.trim(), price: null, barcode: null })
   submitting.value = false
   closeModal()
 }
