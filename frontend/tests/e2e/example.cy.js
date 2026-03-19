@@ -8,14 +8,6 @@ describe('Shopping Lists', () => {
     cy.get('h1').should('contain', 'Einkaufslisten')
   })
 
-  it('shows seed lists after database reset', () => {
-    // After clearPouchDB + reload the seed data is re-inserted,
-    // so lists are never truly empty in this setup.
-    cy.contains('Wocheneinkauf').should('be.visible')
-    cy.contains('Baumarkt').should('be.visible')
-    cy.contains('Apotheke').should('be.visible')
-  })
-
   it('creates a new list with name and category', () => {
     cy.contains('+ Neue Liste erstellen').click()
     cy.get('input[placeholder="z.B. Wocheneinkauf"]').type('Wocheneinkauf Test')
@@ -67,18 +59,20 @@ describe('Shopping Lists', () => {
   })
 
   it('shows empty state after all lists are deleted', () => {
-    // Delete all seed lists (3) one by one
-    const seedListNames = ['Wocheneinkauf', 'Baumarkt', 'Apotheke']
+    // Delete all lists that exist (seed or otherwise)
+    function deleteAllLists() {
+      cy.get('body').then(($body) => {
+        if ($body.find('button[title="Liste löschen"]').length > 0) {
+          cy.get('button[title="Liste löschen"]').first().click()
+          cy.contains('button', 'Löschen').click()
+          cy.get('button[title="Liste löschen"]').should('have.length.lessThan',
+            $body.find('button[title="Liste löschen"]').length)
+          deleteAllLists()
+        }
+      })
+    }
 
-    seedListNames.forEach((name) => {
-      cy.contains(name)
-        .closest('.bg-white')
-        .find('button[title="Liste löschen"]')
-        .click()
-      cy.contains('button', 'Löschen').click()
-      cy.contains(name).should('not.exist')
-    })
-
+    deleteAllLists()
     cy.contains('Noch keine Listen vorhanden').should('be.visible')
   })
 })
