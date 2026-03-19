@@ -16,12 +16,10 @@
 // Import commands.js using ES2015 syntax:
 import './commands'
 
-// Ignore PouchDB IndexedDB errors that occur during database teardown
+// Ignore PouchDB/IndexedDB errors that occur when the database is destroyed
+// between tests (expected during clearPouchDB).
 Cypress.on('uncaught:exception', (err) => {
-  if (err.message.includes('database connection is closing')) {
+  if (err.name === 'InvalidStateError' || err.message.includes('database connection is closing')) {
     return false
   }
 })
-
-// Alternatively you can use CommonJS syntax:
-// require('./commands')
