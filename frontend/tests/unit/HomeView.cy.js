@@ -93,9 +93,10 @@ describe('HomeView', () => {
     cy.contains('h2', 'Neue Liste erstellen').should('not.exist')
   })
 
-  it('calls deleteList when delete button is clicked', () => {
+  it('calls deleteList when delete is confirmed', () => {
     store.lists = [mockLists[0]]
     cy.get('button[title="Liste löschen"]').click()
+    cy.contains('button', 'Löschen').click()
     cy.wrap(store.deleteList).should('have.been.calledWith', mockLists[0]._id, mockLists[0]._rev)
   })
 })
