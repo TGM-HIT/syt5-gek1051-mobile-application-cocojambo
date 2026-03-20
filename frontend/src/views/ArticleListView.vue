@@ -33,12 +33,18 @@ function clearSearch() {
   searchQuery.value = ''
 }
 
+const TAGS = [
+  'Obst & Gemüse', 'Backwaren', 'Milchprodukte', 'Fleisch & Wurst',
+  'Getränke', 'Tiefkühl', 'Konserven', 'Süßwaren', 'Haushalt', 'Sonstiges',
+]
+
 const newName = ref('')
 const newQuantity = ref(1)
 const newUnit = ref('')
 const newNote = ref('')
 const newPrice = ref(null)
 const newBarcode = ref(null)
+const newTag = ref('')
 
 const editingArticle = ref(null)
 const editName = ref('')
@@ -46,6 +52,7 @@ const editQuantity = ref(1)
 const editUnit = ref('')
 const editNote = ref('')
 const editPrice = ref(null)
+const editTag = ref('')
 
 onMounted(async () => {
   await listStore.loadLists()
@@ -60,6 +67,7 @@ function openModal() {
   newNote.value = ''
   newPrice.value = null
   newBarcode.value = null
+  newTag.value = ''
   showModal.value = true
 }
 
@@ -87,6 +95,7 @@ async function submitCreate() {
     note: newNote.value.trim(),
     price: newPrice.value ?? null,
     barcode: newBarcode.value ?? null,
+    tag: newTag.value,
   })
   submitting.value = false
   closeModal()
@@ -99,6 +108,7 @@ function openEditModal(article) {
   editUnit.value = article.unit || ''
   editNote.value = article.note || ''
   editPrice.value = article.price
+  editTag.value = article.tag || ''
   showEditModal.value = true
 }
 
@@ -127,6 +137,7 @@ async function submitEdit() {
     unit: editUnit.value.trim(),
     note: editNote.value.trim(),
     price: newPrice,
+    tag: editTag.value,
   })
   submitting.value = false
   closeEditModal()
@@ -151,6 +162,20 @@ function priceTrend(article) {
   if (curr < prev) return 'down'
   return null
 }
+
+const groupedArticles = computed(() => {
+  const groups = []
+  let currentTag = null
+  for (const article of articleStore.articles) {
+    const tag = article.tag || ''
+    if (tag !== currentTag) {
+      groups.push({ tag, articles: [] })
+      currentTag = tag
+    }
+    groups[groups.length - 1].articles.push(article)
+  }
+  return groups
+})
 
 const listTotal = computed(() => {
   return articleStore.articles
@@ -333,12 +358,17 @@ async function onPriceScanned(newPrice) {
       </div>
 
       <div class="grid gap-3">
-        <div
-          v-for="article in articleStore.articles"
-          :key="article._id"
-          class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex items-center gap-4"
-          :class="{ 'opacity-60': article.checked }"
-        >
+        <template v-for="group in groupedArticles" :key="group.tag">
+          <div v-if="group.tag" class="flex items-center gap-2 mt-2 first:mt-0">
+            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ group.tag }}</span>
+            <div class="flex-1 border-t border-gray-200"></div>
+          </div>
+          <div
+            v-for="article in group.articles"
+            :key="article._id"
+            class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex items-center gap-4"
+            :class="{ 'opacity-60': article.checked }"
+          >
           <!-- Checkbox -->
           <input
             type="checkbox"
@@ -359,6 +389,7 @@ async function onPriceScanned(newPrice) {
               {{ article.quantity }}
               <span v-if="article.unit">{{ article.unit }}</span>
             </p>
+            <span v-if="article.tag" class="inline-block text-[10px] font-medium bg-green-100 text-green-700 rounded-full px-1.5 py-0.5 mt-0.5">{{ article.tag }}</span>
             <p v-if="article.note" class="text-xs text-gray-500 mt-0.5 italic">{{ article.note }}</p>
             <p v-if="article.price != null" class="text-xs text-gray-500 mt-0.5">
               <span
@@ -406,6 +437,7 @@ async function onPriceScanned(newPrice) {
             </button>
           </div>
         </div>
+        </template>
       </div>
       <!-- Hidden articles section -->
       <div v-if="articleStore.hiddenArticles.length > 0" class="mt-8">
@@ -525,6 +557,16 @@ async function onPriceScanned(newPrice) {
               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Abteilung</label>
+            <select
+              v-model="newTag"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Keine Abteilung</option>
+              <option v-for="t in TAGS" :key="t" :value="t">{{ t }}</option>
+            </select>
+          </div>
           <div class="flex gap-3 pt-2">
             <button
               type="button"
@@ -640,6 +682,16 @@ async function onPriceScanned(newPrice) {
               placeholder="z.B. Bio-Qualität"
               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Abteilung</label>
+            <select
+              v-model="editTag"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Keine Abteilung</option>
+              <option v-for="t in TAGS" :key="t" :value="t">{{ t }}</option>
+            </select>
           </div>
           <div class="flex gap-3 pt-2">
             <button
