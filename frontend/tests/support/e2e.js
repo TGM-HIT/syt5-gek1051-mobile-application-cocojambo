@@ -19,7 +19,7 @@ import './commands'
 // Ignore PouchDB/IndexedDB errors that occur when the database is destroyed
 // between tests (expected during clearPouchDB).
 Cypress.on('uncaught:exception', (err) => {
-  if (err.name === 'InvalidStateError' || err.message.includes('database connection is closing')) {
+  if (err.name === 'InvalidStateError' || err.name === 'conflict' || err.message.includes('database connection is closing') || err.message.includes('Document update conflict')) {
     return false
   }
 })

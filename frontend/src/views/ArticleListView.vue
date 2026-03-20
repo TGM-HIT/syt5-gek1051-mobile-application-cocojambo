@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useArticleStore } from '../stores/article.js'
 import { useShoppingListStore } from '../stores/shoppingList.js'
+import { useThemeStore } from '../stores/theme.js'
 import BarcodeScanner from './BarcodeScanner.vue'
 import PriceTagScanner from './PriceTagScanner.vue'
 
@@ -10,6 +11,7 @@ const route = useRoute()
 const router = useRouter()
 const articleStore = useArticleStore()
 const listStore = useShoppingListStore()
+const themeStore = useThemeStore()
 
 const listId = route.params.id
 const list = ref(null)
@@ -176,36 +178,43 @@ async function onPriceScanned(newPrice) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- Header -->
-    <header class="bg-white shadow-sm">
+    <header class="bg-white dark:bg-gray-800 shadow-sm">
       <div class="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
         <button
           @click="router.push('/')"
-          class="text-gray-500 hover:text-gray-800 transition-colors text-lg font-medium"
+          class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 transition-colors text-lg font-medium"
           title="Zurück"
         >
           ←
         </button>
         <div class="flex-1">
-          <h1 class="text-2xl font-bold text-gray-800">{{ list?.name ?? 'Liste' }}</h1>
+          <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ list?.name ?? 'Liste' }}</h1>
           <span
             v-if="list?.category"
-            class="inline-block text-xs font-medium bg-blue-100 text-blue-700 rounded-full px-2 py-0.5"
+            class="inline-block text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full px-2 py-0.5"
           >
             {{ list.category }}
           </span>
         </div>
         <button
+          @click="themeStore.toggle()"
+          class="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium px-3 py-2 rounded-lg transition-colors"
+          :title="themeStore.isDark ? 'Light Mode' : 'Dark Mode'"
+        >
+          {{ themeStore.isDark ? '☀️' : '🌙' }}
+        </button>
+        <button
           @click="showShareModal = true"
-          class="border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium px-3 py-2 rounded-lg transition-colors"
+          class="border border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-medium px-3 py-2 rounded-lg transition-colors"
           title="Liste teilen"
         >
           Teilen
         </button>
         <button
           @click="showScanner = true"
-          class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-3 py-2 rounded-lg transition-colors"
+          class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium px-3 py-2 rounded-lg transition-colors"
           title="Barcode scannen"
         >
           Scan Barcode
@@ -220,7 +229,7 @@ async function onPriceScanned(newPrice) {
     </header>
 
     <!-- Search -->
-    <div class="bg-white border-b border-gray-100">
+    <div class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
       <div class="max-w-3xl mx-auto px-4 py-3">
         <div class="relative">
           <span class="absolute left-3 top-2 text-gray-400 text-sm pointer-events-none">🔍</span>
@@ -228,7 +237,7 @@ async function onPriceScanned(newPrice) {
             v-model="searchQuery"
             type="text"
             placeholder="Artikel suchen..."
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 pl-9 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 pl-9 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             v-if="searchQuery"
@@ -242,18 +251,18 @@ async function onPriceScanned(newPrice) {
         <!-- Search results -->
         <div
           v-if="searchQuery"
-          class="mt-2 bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden"
+          class="mt-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md overflow-hidden"
         >
           <!-- In current list -->
           <div v-if="articleStore.searchResults.inCurrentList.length > 0">
-            <p class="text-xs font-semibold text-gray-400 px-4 pt-3 pb-1 uppercase tracking-wide">
+            <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 px-4 pt-3 pb-1 uppercase tracking-wide">
               In dieser Liste
             </p>
             <div
               v-for="article in articleStore.searchResults.inCurrentList"
               :key="article._id"
               @click="toggleFromSearch(article)"
-              class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
+              class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
             >
               <input
                 type="checkbox"
@@ -261,12 +270,12 @@ async function onPriceScanned(newPrice) {
                 class="w-4 h-4 accent-blue-600 pointer-events-none flex-shrink-0"
               />
               <span
-                class="text-sm text-gray-800 flex-1"
-                :class="{ 'line-through text-gray-400': article.checked }"
+                class="text-sm text-gray-800 dark:text-gray-200 flex-1"
+                :class="{ 'line-through text-gray-400 dark:text-gray-500': article.checked }"
               >
                 {{ article.name }}
               </span>
-              <span class="text-xs text-gray-400">
+              <span class="text-xs text-gray-400 dark:text-gray-500">
                 {{ article.quantity }}{{ article.unit ? ' ' + article.unit : '' }}
               </span>
             </div>
@@ -274,18 +283,18 @@ async function onPriceScanned(newPrice) {
 
           <!-- From other lists -->
           <div v-if="articleStore.searchResults.inOtherLists.length > 0">
-            <p class="text-xs font-semibold text-gray-400 px-4 pt-3 pb-1 uppercase tracking-wide">
+            <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 px-4 pt-3 pb-1 uppercase tracking-wide">
               Aus anderen Listen
             </p>
             <div
               v-for="article in articleStore.searchResults.inOtherLists"
               :key="article._id"
               @click="articleStore.addFromSearch(listId, article); clearSearch()"
-              class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
+              class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
             >
               <span class="text-gray-400 text-sm flex-shrink-0">+</span>
-              <span class="text-sm text-gray-800 flex-1">{{ article.name }}</span>
-              <span class="text-xs text-gray-400">
+              <span class="text-sm text-gray-800 dark:text-gray-200 flex-1">{{ article.name }}</span>
+              <span class="text-xs text-gray-400 dark:text-gray-500">
                 {{ article.quantity }}{{ article.unit ? ' ' + article.unit : '' }}
               </span>
             </div>
@@ -293,18 +302,18 @@ async function onPriceScanned(newPrice) {
 
           <!-- Past / hidden articles -->
           <div v-if="articleStore.searchResults.inPast.length > 0">
-            <p class="text-xs font-semibold text-gray-400 px-4 pt-3 pb-1 uppercase tracking-wide">
+            <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 px-4 pt-3 pb-1 uppercase tracking-wide">
               Vergangene Artikel
             </p>
             <div
               v-for="article in articleStore.searchResults.inPast"
               :key="article._id"
               @click="articleStore.addFromSearch(listId, article); clearSearch()"
-              class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
+              class="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
             >
               <span class="text-gray-400 text-sm flex-shrink-0">↩</span>
               <span class="text-sm text-gray-500 flex-1 line-through">{{ article.name }}</span>
-              <span class="text-xs text-gray-400">
+              <span class="text-xs text-gray-400 dark:text-gray-500">
                 {{ article.quantity }}{{ article.unit ? ' ' + article.unit : '' }}
               </span>
             </div>
@@ -317,7 +326,7 @@ async function onPriceScanned(newPrice) {
               articleStore.searchResults.inOtherLists.length === 0 &&
               articleStore.searchResults.inPast.length === 0
             "
-            class="px-4 py-4 text-center text-sm text-gray-400"
+            class="px-4 py-4 text-center text-sm text-gray-400 dark:text-gray-500"
           >
             Keine Artikel gefunden.
           </div>
@@ -327,7 +336,7 @@ async function onPriceScanned(newPrice) {
 
     <!-- Article list -->
     <main class="max-w-3xl mx-auto px-4 py-6" :class="{ 'pb-20': listTotal > 0 }">
-      <div v-if="articleStore.articles.length === 0" class="text-center text-gray-400 mt-16">
+      <div v-if="articleStore.articles.length === 0" class="text-center text-gray-400 dark:text-gray-500 mt-16">
         <p class="text-lg">Noch keine Artikel vorhanden.</p>
         <p class="text-sm mt-1">Füge deinen ersten Artikel hinzu!</p>
       </div>
@@ -336,7 +345,7 @@ async function onPriceScanned(newPrice) {
         <div
           v-for="article in articleStore.articles"
           :key="article._id"
-          class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex items-center gap-4"
+          class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-4"
           :class="{ 'opacity-60': article.checked }"
         >
           <!-- Checkbox -->
@@ -350,17 +359,17 @@ async function onPriceScanned(newPrice) {
           <!-- Info -->
           <div class="flex-1 min-w-0">
             <p
-              class="text-base font-medium text-gray-800 truncate"
-              :class="{ 'line-through text-gray-400': article.checked }"
+              class="text-base font-medium text-gray-800 dark:text-gray-100 truncate"
+              :class="{ 'line-through text-gray-400 dark:text-gray-500': article.checked }"
             >
               {{ article.name }}
             </p>
-            <p class="text-xs text-gray-400">
+            <p class="text-xs text-gray-400 dark:text-gray-500">
               {{ article.quantity }}
               <span v-if="article.unit">{{ article.unit }}</span>
             </p>
-            <p v-if="article.note" class="text-xs text-gray-500 mt-0.5 italic">{{ article.note }}</p>
-            <p v-if="article.price != null" class="text-xs text-gray-500 mt-0.5">
+            <p v-if="article.note" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 italic">{{ article.note }}</p>
+            <p v-if="article.price != null" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               <span
                 @click="togglePriceHistory(article._id)"
                 class="cursor-pointer hover:text-blue-500"
@@ -373,7 +382,7 @@ async function onPriceScanned(newPrice) {
             <!-- Price history expandable -->
             <div
               v-if="expandedPriceId === article._id && article.priceHistory && article.priceHistory.length > 0"
-              class="mt-1 text-xs text-gray-400 space-y-0.5"
+              class="mt-1 text-xs text-gray-400 dark:text-gray-500 space-y-0.5"
             >
               <p v-for="(entry, idx) in article.priceHistory" :key="idx">
                 {{ new Date(entry.setAt).toLocaleDateString('de-AT') }}: {{ formatPrice(entry.price) }}
@@ -411,7 +420,7 @@ async function onPriceScanned(newPrice) {
       <div v-if="articleStore.hiddenArticles.length > 0" class="mt-8">
         <button
           @click="showHidden = !showHidden"
-          class="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors font-medium"
+          class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors font-medium"
         >
           <span>{{ showHidden ? '▾' : '▸' }}</span>
           Ausgeblendete Artikel ({{ articleStore.hiddenArticles.length }})
@@ -421,13 +430,13 @@ async function onPriceScanned(newPrice) {
           <div
             v-for="article in articleStore.hiddenArticles"
             :key="article._id"
-            class="bg-white rounded-xl shadow-sm border border-dashed border-gray-300 p-4 flex items-center gap-4 opacity-60"
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-dashed border-gray-300 dark:border-gray-600 p-4 flex items-center gap-4 opacity-60"
           >
             <div class="flex-1 min-w-0">
-              <p class="text-base font-medium text-gray-500 truncate line-through">
+              <p class="text-base font-medium text-gray-500 dark:text-gray-400 truncate line-through">
                 {{ article.name }}
               </p>
-              <p class="text-xs text-gray-400">
+              <p class="text-xs text-gray-400 dark:text-gray-500">
                 {{ article.quantity }}
                 <span v-if="article.unit">{{ article.unit }}</span>
               </p>
@@ -456,11 +465,11 @@ async function onPriceScanned(newPrice) {
     <!-- Total footer -->
     <div
       v-if="listTotal > 0"
-      class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40"
+      class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-40"
     >
       <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
-        <span class="text-sm font-medium text-gray-600">Gesamt</span>
-        <span class="text-lg font-bold text-gray-800">{{ formatPrice(listTotal) }}</span>
+        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Gesamt</span>
+        <span class="text-lg font-bold text-gray-800 dark:text-gray-100">{{ formatPrice(listTotal) }}</span>
       </div>
     </div>
 
@@ -470,66 +479,66 @@ async function onPriceScanned(newPrice) {
       class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
       @click.self="closeModal"
     >
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">Neuer Artikel</h2>
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Neuer Artikel</h2>
         <form @submit.prevent="submitCreate" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
             <input
               v-model="newName"
               type="text"
               required
               placeholder="z.B. Milch"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div class="flex gap-3">
             <div class="flex-1">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Menge</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Menge</label>
               <input
                 v-model.number="newQuantity"
                 type="number"
                 min="0"
                 step="any"
                 placeholder="1"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div class="flex-1">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Einheit</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Einheit</label>
               <input
                 v-model="newUnit"
                 type="text"
                 placeholder="z.B. kg"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Preis (€)</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preis (€)</label>
             <input
               v-model.number="newPrice"
               type="number"
               min="0"
               step="0.01"
               placeholder="z.B. 2,49"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Notiz</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notiz</label>
             <input
               v-model="newNote"
               type="text"
               placeholder="z.B. Bio-Qualität"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div class="flex gap-3 pt-2">
             <button
               type="button"
               @click="closeModal"
-              class="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+              class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Abbrechen
             </button>
@@ -565,17 +574,17 @@ async function onPriceScanned(newPrice) {
       class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
       @click.self="showShareModal = false"
     >
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6 text-center">
-        <h2 class="text-xl font-bold text-gray-800 mb-2">Liste teilen</h2>
-        <p class="text-sm text-gray-500 mb-4">Teile diesen Code, damit andere Benutzer der Liste beitreten können.</p>
-        <div class="bg-gray-100 rounded-xl py-4 px-6 mb-4">
-          <span class="text-3xl font-mono font-bold tracking-widest text-gray-800">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6 text-center">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">Liste teilen</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Teile diesen Code, damit andere Benutzer der Liste beitreten können.</p>
+        <div class="bg-gray-100 dark:bg-gray-700 rounded-xl py-4 px-6 mb-4">
+          <span class="text-3xl font-mono font-bold tracking-widest text-gray-800 dark:text-gray-100">
             {{ list?.shareCode ?? '------' }}
           </span>
         </div>
         <button
           @click="showShareModal = false"
-          class="w-full border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+          class="w-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         >
           Schliessen
         </button>
@@ -588,64 +597,64 @@ async function onPriceScanned(newPrice) {
       class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
       @click.self="closeEditModal"
     >
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">Artikel bearbeiten</h2>
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Artikel bearbeiten</h2>
         <form @submit.prevent="submitEdit" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
             <input
               v-model="editName"
               type="text"
               required
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div class="flex gap-3">
             <div class="flex-1">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Menge</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Menge</label>
               <input
                 v-model.number="editQuantity"
                 type="number"
                 min="0"
                 step="any"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div class="flex-1">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Einheit</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Einheit</label>
               <input
                 v-model="editUnit"
                 type="text"
                 placeholder="z.B. kg"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Preis (€)</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preis (€)</label>
             <input
               v-model.number="editPrice"
               type="number"
               min="0"
               step="0.01"
               placeholder="z.B. 2,49"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Notiz</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notiz</label>
             <input
               v-model="editNote"
               type="text"
               placeholder="z.B. Bio-Qualität"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div class="flex gap-3 pt-2">
             <button
               type="button"
               @click="closeEditModal"
-              class="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+              class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Abbrechen
             </button>
