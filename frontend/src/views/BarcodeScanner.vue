@@ -131,27 +131,27 @@ onUnmounted(() => {
     </div>
 
     <!-- Nutrition popup -->
-    <div v-else class="w-full max-w-md mx-4 bg-white rounded-2xl shadow-xl overflow-hidden">
-      <div class="px-5 py-4 border-b border-gray-100">
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Produkt</p>
-        <h2 class="text-lg font-bold text-gray-800">{{ nutritionData.name }}</h2>
+    <div v-else class="w-full max-w-md mx-4 bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+        <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Produkt</p>
+        <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">{{ nutritionData.name }}</h2>
       </div>
 
       <div class="px-5 py-4">
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+        <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">
           Nährwerte pro 100 g
         </p>
-        <div v-if="nutritionData.per100g.length > 0" class="divide-y divide-gray-100">
+        <div v-if="nutritionData.per100g.length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
           <div
             v-for="row in nutritionData.per100g"
             :key="row.label"
             class="flex justify-between py-2 text-sm"
           >
-            <span class="text-gray-600">{{ row.label }}</span>
-            <span class="font-medium text-gray-800">{{ row.value }} {{ row.unit }}</span>
+            <span class="text-gray-600 dark:text-gray-400">{{ row.label }}</span>
+            <span class="font-medium text-gray-800 dark:text-gray-100">{{ row.value }} {{ row.unit }}</span>
           </div>
         </div>
-        <p v-else class="text-sm text-gray-400 text-center py-2">
+        <p v-else class="text-sm text-gray-400 dark:text-gray-500 text-center py-2">
           Keine Nährwertangaben verfügbar.
         </p>
 
@@ -176,7 +176,7 @@ onUnmounted(() => {
       <div class="px-5 pb-5 flex gap-3">
         <button
           @click="stopScanner"
-          class="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+          class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         >
           Abbrechen
         </button>
