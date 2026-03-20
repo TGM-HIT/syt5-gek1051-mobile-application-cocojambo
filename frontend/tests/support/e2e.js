@@ -16,6 +16,15 @@
 // Import commands.js using ES2015 syntax:
 import './commands'
 
+// Ensure a username is set so the username prompt does not block e2e tests.
+beforeEach(() => {
+  cy.window({ log: false }).then((win) => {
+    if (!win.localStorage.getItem('username')) {
+      win.localStorage.setItem('username', 'CypressE2E#0000')
+    }
+  })
+})
+
 // Ignore PouchDB/IndexedDB errors that occur when the database is destroyed
 // between tests (expected during clearPouchDB).
 Cypress.on('uncaught:exception', (err) => {
