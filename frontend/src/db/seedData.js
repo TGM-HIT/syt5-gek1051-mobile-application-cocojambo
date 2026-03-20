@@ -1,62 +1,73 @@
-import { getDeviceId } from './index.js'
+import { getUsername } from './index.js'
 
-export const seedLists = [
-  {
-    _id: 'seed-list-1',
-    type: 'list',
-    name: 'Wocheneinkauf',
-    category: 'Lebensmittel',
-    members: [getDeviceId()],
-    shareCode: 'WCH3NK',
-    createdAt: '2024-01-10T08:00:00.000Z',
-  },
-  {
-    _id: 'seed-list-2',
-    type: 'list',
-    name: 'Baumarkt',
-    category: 'Haushalt',
-    members: [getDeviceId()],
-    shareCode: 'BAU4MK',
-    createdAt: '2024-01-12T10:00:00.000Z',
-  },
-  {
-    _id: 'seed-list-3',
-    type: 'list',
-    name: 'Apotheke',
-    category: 'Gesundheit',
-    members: [getDeviceId()],
-    shareCode: 'APT3KE',
-    createdAt: '2024-01-15T09:00:00.000Z',
-  },
-  {
-    _id: 'seed-list-spar',
-    type: 'list',
-    name: 'SPAR Preisliste',
-    category: 'Preisvergleich',
-    createdAt: '2024-02-01T08:00:00.000Z',
-  },
-  {
-    _id: 'seed-list-billa',
-    type: 'list',
-    name: 'Billa Preisliste',
-    category: 'Preisvergleich',
-    createdAt: '2024-02-01T09:00:00.000Z',
-  },
-  {
-    _id: 'seed-list-hofer',
-    type: 'list',
-    name: 'Hofer Preisliste',
-    category: 'Preisvergleich',
-    createdAt: '2024-02-01T10:00:00.000Z',
-  },
-  {
-    _id: 'seed-list-lidl',
-    type: 'list',
-    name: 'Lidl Preisliste',
-    category: 'Preisvergleich',
-    createdAt: '2024-02-01T11:00:00.000Z',
-  },
-]
+export function getSeedLists() {
+  const username = getUsername()
+  return [
+    {
+      _id: 'seed-list-1',
+      type: 'list',
+      name: 'Wocheneinkauf',
+      category: 'Lebensmittel',
+      members: [username],
+      shareCode: 'WCH3NK',
+      createdAt: '2024-01-10T08:00:00.000Z',
+    },
+    {
+      _id: 'seed-list-2',
+      type: 'list',
+      name: 'Baumarkt',
+      category: 'Haushalt',
+      members: [username],
+      shareCode: 'BAU4MK',
+      createdAt: '2024-01-12T10:00:00.000Z',
+    },
+    {
+      _id: 'seed-list-3',
+      type: 'list',
+      name: 'Apotheke',
+      category: 'Gesundheit',
+      members: [username],
+      shareCode: 'APT3KE',
+      createdAt: '2024-01-15T09:00:00.000Z',
+    },
+    {
+      _id: 'seed-list-spar',
+      type: 'list',
+      name: 'SPAR Preisliste',
+      category: 'Preisvergleich',
+      members: [username],
+      shareCode: 'SPR4LT',
+      createdAt: '2024-02-01T08:00:00.000Z',
+    },
+    {
+      _id: 'seed-list-billa',
+      type: 'list',
+      name: 'Billa Preisliste',
+      category: 'Preisvergleich',
+      members: [username],
+      shareCode: 'BLL4PL',
+      createdAt: '2024-02-01T09:00:00.000Z',
+    },
+    {
+      _id: 'seed-list-hofer',
+      type: 'list',
+      name: 'Hofer Preisliste',
+      category: 'Preisvergleich',
+      members: [username],
+      shareCode: 'HFR4PL',
+      createdAt: '2024-02-01T10:00:00.000Z',
+    },
+    {
+      _id: 'seed-list-lidl',
+      type: 'list',
+      name: 'Lidl Preisliste',
+      category: 'Preisvergleich',
+      members: [username],
+      shareCode: 'LDL4PL',
+      createdAt: '2024-02-01T11:00:00.000Z',
+    },
+  ]
+}
 
 export const seedArticles = [
   // ── Wocheneinkauf ──

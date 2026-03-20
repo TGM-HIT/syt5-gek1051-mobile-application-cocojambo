@@ -1,18 +1,20 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { useShoppingListStore } from '../../src/stores/shoppingList.js'
-import { seedLists } from '../../src/db/seedData.js'
 import HomeView from '../../src/views/HomeView.vue'
 
+const TEST_USERNAME = 'TestUser#abcd'
+
 const mockLists = [
-  { ...seedLists[0], _rev: '1-abc' },
-  { ...seedLists[1], category: '', _rev: '1-def' },
+  { _id: 'seed-list-1', type: 'list', name: 'Wocheneinkauf', category: 'Lebensmittel', members: [TEST_USERNAME], shareCode: 'WCH3NK', createdAt: '2024-01-10T08:00:00.000Z', _rev: '1-abc' },
+  { _id: 'seed-list-2', type: 'list', name: 'Baumarkt', category: '', members: [TEST_USERNAME], shareCode: 'BAU4MK', createdAt: '2024-01-12T10:00:00.000Z', _rev: '1-def' },
 ]
 
 describe('HomeView', () => {
   let store
 
   beforeEach(() => {
+    localStorage.setItem('username', TEST_USERNAME)
     const pinia = createPinia()
     setActivePinia(pinia)
     store = useShoppingListStore()
