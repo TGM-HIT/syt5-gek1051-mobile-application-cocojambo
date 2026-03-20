@@ -34,7 +34,9 @@ describe('Dark/Light Mode', () => {
 
   it('startet standardmäßig im Light Mode', () => {
     mountHomeView()
-    cy.document().its('documentElement.classList').should('not.contain', 'dark')
+    cy.document().then((doc) => {
+      expect(doc.documentElement.classList.contains('dark')).to.be.false
+    })
   })
 
   it('zeigt den Dark-Mode-Toggle-Button', () => {
@@ -45,15 +47,21 @@ describe('Dark/Light Mode', () => {
   it('wechselt zu Dark Mode bei Klick auf den Toggle', () => {
     mountHomeView()
     cy.get('button[title="Dark Mode"]').click()
-    cy.document().its('documentElement.classList').should('contain', 'dark')
+    cy.document().then((doc) => {
+      expect(doc.documentElement.classList.contains('dark')).to.be.true
+    })
   })
 
   it('wechselt zurück zu Light Mode bei erneutem Klick', () => {
     mountHomeView()
     cy.get('button[title="Dark Mode"]').click()
-    cy.document().its('documentElement.classList').should('contain', 'dark')
+    cy.document().then((doc) => {
+      expect(doc.documentElement.classList.contains('dark')).to.be.true
+    })
     cy.get('button[title="Light Mode"]').click()
-    cy.document().its('documentElement.classList').should('not.contain', 'dark')
+    cy.document().then((doc) => {
+      expect(doc.documentElement.classList.contains('dark')).to.be.false
+    })
   })
 
   it('speichert die Auswahl in localStorage', () => {
@@ -76,7 +84,9 @@ describe('Dark/Light Mode', () => {
   it('lädt Dark Mode aus localStorage', () => {
     localStorage.setItem('theme', 'dark')
     mountHomeView()
-    cy.document().its('documentElement.classList').should('contain', 'dark')
+    cy.document().then((doc) => {
+      expect(doc.documentElement.classList.contains('dark')).to.be.true
+    })
     cy.get('button[title="Light Mode"]').should('be.visible')
   })
 
@@ -125,9 +135,13 @@ describe('Theme Store', () => {
     setActivePinia(pinia)
     const store = useThemeStore()
     store.toggle()
-    expect(localStorage.getItem('theme')).to.equal('dark')
-    store.toggle()
-    expect(localStorage.getItem('theme')).to.equal('light')
+    cy.wrap(null).should(() => {
+      expect(localStorage.getItem('theme')).to.equal('dark')
+    })
+    cy.then(() => store.toggle())
+    cy.wrap(null).should(() => {
+      expect(localStorage.getItem('theme')).to.equal('light')
+    })
   })
 
   it('toggle() setzt die dark-Klasse auf documentElement', () => {
@@ -135,8 +149,12 @@ describe('Theme Store', () => {
     setActivePinia(pinia)
     const store = useThemeStore()
     store.toggle()
-    expect(document.documentElement.classList.contains('dark')).to.be.true
-    store.toggle()
-    expect(document.documentElement.classList.contains('dark')).to.be.false
+    cy.wrap(null).should(() => {
+      expect(document.documentElement.classList.contains('dark')).to.be.true
+    })
+    cy.then(() => store.toggle())
+    cy.wrap(null).should(() => {
+      expect(document.documentElement.classList.contains('dark')).to.be.false
+    })
   })
 })
