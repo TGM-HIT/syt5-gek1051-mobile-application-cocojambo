@@ -4,6 +4,7 @@ import App from '../../src/App.vue'
 import { useOnlineStatusStore } from '../../src/stores/onlineStatus.js'
 
 function mountApp() {
+  localStorage.setItem('username', 'TestUser#abcd')
   const pinia = createPinia()
   setActivePinia(pinia)
   const router = createRouter({
