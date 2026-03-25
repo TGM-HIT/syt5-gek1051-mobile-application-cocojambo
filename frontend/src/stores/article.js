@@ -1,14 +1,34 @@
 import { defineStore } from 'pinia'
-import { db } from '../db/index.js'
+import { db, onDbChange } from '../db/index.js'
 
 export const useArticleStore = defineStore('article', {
   state: () => ({
     articles: [],
     hiddenArticles: [],
     searchResults: { inCurrentList: [], inOtherLists: [], inPast: [] },
+    _unsubscribe: null,
+    _currentListId: null,
   }),
 
   actions: {
+    startLiveSync(listId) {
+      this.stopLiveSync()
+      this._currentListId = listId
+      this._unsubscribe = onDbChange((change) => {
+        if (change.doc && (change.doc.type === 'article' || change.deleted)) {
+          this.loadArticles(this._currentListId)
+        }
+      })
+    },
+
+    stopLiveSync() {
+      if (this._unsubscribe) {
+        this._unsubscribe()
+        this._unsubscribe = null
+      }
+      this._currentListId = null
+    },
+
     async loadArticles(listId) {
       const result = await db.allDocs({ include_docs: true })
       const all = result.rows

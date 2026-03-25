@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useShoppingListStore } from '../stores/shoppingList.js'
 import { useThemeStore } from '../stores/theme.js'
@@ -24,6 +24,11 @@ const listToDelete = ref(null)
 
 onMounted(() => {
   store.loadLists()
+  store.startLiveSync()
+})
+
+onUnmounted(() => {
+  store.stopLiveSync()
 })
 
 function openModal() {
