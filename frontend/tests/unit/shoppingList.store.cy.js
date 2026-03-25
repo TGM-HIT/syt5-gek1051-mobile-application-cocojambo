@@ -80,6 +80,10 @@ describe('ShoppingListStore – joinList', () => {
     localStorage.setItem('username', TEST_USERNAME)
     setActivePinia(createPinia())
     store = useShoppingListStore()
+
+    cy.window().then((win) => {
+      cy.stub(win.__db.replicate, 'from').resolves()
+    })
   })
 
   it('gibt null zurück wenn kein passender Code gefunden wird', () => {

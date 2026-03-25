@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useArticleStore } from '../stores/article.js'
 import { useShoppingListStore } from '../stores/shoppingList.js'
@@ -53,6 +53,13 @@ onMounted(async () => {
   await listStore.loadLists()
   list.value = listStore.lists.find((l) => l._id === listId) || null
   await articleStore.loadArticles(listId)
+  articleStore.startLiveSync(listId)
+  listStore.startLiveSync()
+})
+
+onUnmounted(() => {
+  articleStore.stopLiveSync()
+  listStore.stopLiveSync()
 })
 
 function openModal() {

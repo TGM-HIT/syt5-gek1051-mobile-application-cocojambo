@@ -1,12 +1,29 @@
 import { defineStore } from 'pinia'
-import { db, getUsername, generateShareCode } from '../db/index.js'
+import { db, remoteUrl, onDbChange, getUsername, generateShareCode } from '../db/index.js'
 
 export const useShoppingListStore = defineStore('shoppingList', {
   state: () => ({
     lists: [],
+    _unsubscribe: null,
   }),
 
   actions: {
+    startLiveSync() {
+      this.stopLiveSync()
+      this._unsubscribe = onDbChange((change) => {
+        if (change.doc && (change.doc.type === 'list' || change.deleted)) {
+          this.loadLists()
+        }
+      })
+    },
+
+    stopLiveSync() {
+      if (this._unsubscribe) {
+        this._unsubscribe()
+        this._unsubscribe = null
+      }
+    },
+
     async loadLists() {
       const username = getUsername()
       const result = await db.allDocs({ include_docs: true })
@@ -33,10 +50,18 @@ export const useShoppingListStore = defineStore('shoppingList', {
 
     async joinList(code) {
       const username = getUsername()
-      const result = await db.allDocs({ include_docs: true })
-      const list = result.rows
-        .map((row) => row.doc)
-        .find((doc) => doc.type === 'list' && doc.shareCode === code.toUpperCase())
+      const findInDocs = async () => {
+        const result = await db.allDocs({ include_docs: true })
+        return result.rows
+          .map((row) => row.doc)
+          .find((doc) => doc.type === 'list' && doc.shareCode === code.toUpperCase())
+      }
+
+      let list = await findInDocs()
+      if (!list) {
+        await db.replicate.from(remoteUrl, { live: false })
+        list = await findInDocs()
+      }
 
       if (!list) return null
 

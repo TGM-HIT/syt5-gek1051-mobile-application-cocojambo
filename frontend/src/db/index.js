@@ -11,9 +11,22 @@ const remoteUrl = `http://${couchUser}:${couchPassword}@${couchHost}:${couchPort
 
 const syncHandler = db.sync(remoteUrl, { live: true, retry: true })
 
+// Live changes feed — fires for both local writes and incoming replication
+const changesListeners = new Set()
+const changesFeed = db.changes({ since: 'now', live: true, include_docs: true })
+changesFeed.on('change', (change) => {
+  for (const cb of changesListeners) cb(change)
+})
+
+function onDbChange(callback) {
+  changesListeners.add(callback)
+  return () => changesListeners.delete(callback)
+}
+
 // Expose helpers for Cypress tests: destroy for isolation, __db for stubbing.
 window.__destroyDB = () =>
   new Promise((resolve) => {
+    changesFeed.cancel()
     syncHandler.on('complete', () => {
       db.destroy().then(resolve).catch(resolve)
     })
@@ -47,4 +60,4 @@ function generateShareCode() {
   return code
 }
 
-export { db, getUsername, setUsername, hasUsername, generateShareCode }
+export { db, remoteUrl, onDbChange, getUsername, setUsername, hasUsername, generateShareCode }
