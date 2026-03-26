@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { RouterView } from 'vue-router'
 import { useOnlineStatusStore } from './stores/onlineStatus.js'
 import { useThemeStore } from './stores/theme.js'
+import { useNotificationStore } from './stores/notification.js'
 import { hasUsername, setUsername } from './db/index.js'
 import { seedDatabase } from './db/seed.js'
 
@@ -10,6 +11,9 @@ const onlineStatusStore = useOnlineStatusStore()
 onlineStatusStore.init()
 
 const themeStore = useThemeStore()
+
+const notificationStore = useNotificationStore()
+notificationStore.init()
 
 const usernameReady = ref(hasUsername())
 const usernameInput = ref('')
@@ -57,6 +61,27 @@ async function submitUsername() {
   </div>
 
   <template v-else>
+    <!-- Notification banners -->
+    <TransitionGroup name="notification">
+      <div
+        v-for="n in notificationStore.notifications"
+        :key="n.id"
+        class="fixed top-0 left-0 right-0 z-[45] safe-top"
+      >
+        <div
+          class="max-w-3xl mx-auto px-4 pt-3"
+        >
+          <div
+            class="bg-white dark:bg-gray-800 border border-green-200 dark:border-green-700 rounded-xl shadow-lg px-4 py-3 flex items-center gap-3"
+            @click="notificationStore.dismiss(n.id)"
+          >
+            <span class="text-green-500 text-lg flex-shrink-0">●</span>
+            <span class="text-sm font-medium text-green-700 dark:text-green-300 flex-1">{{ n.message }}</span>
+          </div>
+        </div>
+      </div>
+    </TransitionGroup>
+
     <div
       v-if="!onlineStatusStore.isOnline"
       class="bg-yellow-400 text-yellow-900 dark:bg-yellow-600 dark:text-yellow-100 text-sm font-medium text-center py-2 px-4 safe-top"

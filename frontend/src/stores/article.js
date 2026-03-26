@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { db, onDbChange } from '../db/index.js'
+import { db, onDbChange, getUsername } from '../db/index.js'
 
 export const useArticleStore = defineStore('article', {
   state: () => ({
@@ -53,6 +53,7 @@ export const useArticleStore = defineStore('article', {
         priceHistory: [],
         checked: false,
         hidden: false,
+        createdBy: getUsername(),
         createdAt: new Date().toISOString(),
       })
       await this.loadArticles(listId)
