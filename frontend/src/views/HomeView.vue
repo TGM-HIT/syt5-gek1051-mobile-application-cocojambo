@@ -93,28 +93,30 @@ async function submitJoin() {
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- Header -->
-    <header class="bg-white dark:bg-gray-800 shadow-sm">
-      <div class="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Einkaufslisten</h1>
-        <div class="flex gap-2">
+    <header class="bg-white dark:bg-gray-800 shadow-sm safe-top">
+      <div class="max-w-3xl mx-auto px-4 pt-4 pb-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Einkaufslisten</h1>
           <button
               @click="themeStore.toggle()"
-              class="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium px-3 py-2 rounded-lg transition-colors"
+              class="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium px-3 py-2.5 rounded-lg transition-colors"
               :title="themeStore.isDark ? 'Light Mode' : 'Dark Mode'"
           >
             {{ themeStore.isDark ? '☀️' : '🌙' }}
           </button>
+        </div>
+        <div class="flex gap-2">
           <button
               @click="openJoinModal"
-              class="border border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-medium px-4 py-2 rounded-lg transition-colors"
+              class="flex-1 border border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-medium py-2.5 rounded-lg transition-colors"
           >
             Liste beitreten
           </button>
           <button
               @click="openModal"
-              class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors"
           >
-            + Neue Liste erstellen
+            + Neue Liste
           </button>
         </div>
       </div>
@@ -159,10 +161,10 @@ async function submitJoin() {
     <!-- Create Modal -->
     <div
         v-if="showModal"
-        class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+        class="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50"
         @click.self="closeModal"
     >
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md sm:mx-4 px-6 pt-6 pb-8">
         <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Neue Liste erstellen</h2>
         <form @submit.prevent="submitForm" class="space-y-4">
           <div>
@@ -184,7 +186,7 @@ async function submitJoin() {
                 class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <div class="flex gap-3 pt-2">
+          <div class="flex gap-3 pt-4">
             <button
                 type="button"
                 @click="closeModal"
@@ -207,10 +209,10 @@ async function submitJoin() {
     <!-- Join Modal -->
     <div
         v-if="showJoinModal"
-        class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+        class="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50"
         @click.self="closeJoinModal"
     >
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm sm:mx-4 px-6 pt-6 pb-8">
         <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Liste beitreten</h2>
         <form @submit.prevent="submitJoin" class="space-y-4">
           <div>
@@ -225,7 +227,7 @@ async function submitJoin() {
             />
           </div>
           <p v-if="joinError" class="text-sm text-red-500">{{ joinError }}</p>
-          <div class="flex gap-3 pt-2">
+          <div class="flex gap-3 pt-4">
             <button
                 type="button"
                 @click="closeJoinModal"
@@ -248,10 +250,10 @@ async function submitJoin() {
     <!-- Delete Confirmation Modal -->
     <div
         v-if="showDeleteModal"
-        class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+        class="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50"
         @click.self="cancelDelete"
     >
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm sm:mx-4 px-6 pt-6 pb-8">
         <div class="flex items-center gap-3 mb-3">
           <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">Liste löschen?</h2>
         </div>
@@ -261,7 +263,7 @@ async function submitJoin() {
           löschen möchtest?
         </p>
         <p class="text-xs text-gray-400 dark:text-gray-500 mb-6">Diese Aktion kann eventuell nicht rückgängig gemacht werden.</p>
-        <div class="flex gap-3">
+        <div class="flex gap-3 pt-2">
           <button
               @click="cancelDelete"
               class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"

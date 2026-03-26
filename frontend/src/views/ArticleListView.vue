@@ -187,51 +187,57 @@ async function onPriceScanned(newPrice) {
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- Header -->
-    <header class="bg-white dark:bg-gray-800 shadow-sm">
-      <div class="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
-        <button
-          @click="router.push('/')"
-          class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 transition-colors text-lg font-medium"
-          title="Zurück"
-        >
-          ←
-        </button>
-        <div class="flex-1">
-          <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ list?.name ?? 'Liste' }}</h1>
-          <span
-            v-if="list?.category"
-            class="inline-block text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full px-2 py-0.5"
+    <header class="bg-white dark:bg-gray-800 shadow-sm safe-top">
+      <div class="max-w-3xl mx-auto px-4 pt-4 pb-5 space-y-3">
+        <!-- Top row: navigation + title + dark mode -->
+        <div class="flex items-center gap-3">
+          <button
+            @click="router.push('/')"
+            class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 transition-colors text-lg font-medium p-1"
+            title="Zurück"
           >
-            {{ list.category }}
-          </span>
+            ←
+          </button>
+          <div class="flex-1 min-w-0">
+            <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100 truncate">{{ list?.name ?? 'Liste' }}</h1>
+            <span
+              v-if="list?.category"
+              class="inline-block text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full px-2 py-0.5"
+            >
+              {{ list.category }}
+            </span>
+          </div>
+          <button
+            @click="themeStore.toggle()"
+            class="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium px-3 py-2.5 rounded-lg transition-colors flex-shrink-0"
+            :title="themeStore.isDark ? 'Light Mode' : 'Dark Mode'"
+          >
+            {{ themeStore.isDark ? '☀️' : '🌙' }}
+          </button>
         </div>
-        <button
-          @click="themeStore.toggle()"
-          class="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium px-3 py-2 rounded-lg transition-colors"
-          :title="themeStore.isDark ? 'Light Mode' : 'Dark Mode'"
-        >
-          {{ themeStore.isDark ? '☀️' : '🌙' }}
-        </button>
-        <button
-          @click="showShareModal = true"
-          class="border border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-medium px-3 py-2 rounded-lg transition-colors"
-          title="Liste teilen"
-        >
-          Teilen
-        </button>
-        <button
-          @click="showScanner = true"
-          class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium px-3 py-2 rounded-lg transition-colors"
-          title="Barcode scannen"
-        >
-          Scan Barcode
-        </button>
-        <button
-          @click="openModal"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          + Artikel
-        </button>
+        <!-- Bottom row: action buttons -->
+        <div class="flex gap-2">
+          <button
+            @click="showShareModal = true"
+            class="flex-1 border border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-medium py-2.5 rounded-lg transition-colors"
+            title="Liste teilen"
+          >
+            Teilen
+          </button>
+          <button
+            @click="showScanner = true"
+            class="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-2.5 rounded-lg transition-colors"
+            title="Barcode scannen"
+          >
+            Barcode
+          </button>
+          <button
+            @click="openModal"
+            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors"
+          >
+            + Artikel
+          </button>
+        </div>
       </div>
     </header>
 
@@ -398,24 +404,24 @@ async function onPriceScanned(newPrice) {
           </div>
 
           <!-- Actions -->
-          <div class="flex items-center gap-2 flex-shrink-0">
+          <div class="flex items-center gap-1 flex-shrink-0">
             <button
               @click="openPriceScanner(article)"
-              class="text-gray-400 hover:text-green-500 transition-colors"
+              class="text-gray-400 hover:text-green-500 transition-colors p-2"
               title="Preis scannen"
             >
               📷
             </button>
             <button
               @click="openEditModal(article)"
-              class="text-gray-400 hover:text-blue-500 transition-colors"
+              class="text-gray-400 hover:text-blue-500 transition-colors p-2"
               title="Bearbeiten"
             >
               ✎
             </button>
             <button
               @click="articleStore.hideArticle(listId, article)"
-              class="text-gray-400 hover:text-orange-500 transition-colors"
+              class="text-gray-400 hover:text-orange-500 transition-colors p-2"
               title="Ausblenden"
             >
               ✕
@@ -472,7 +478,7 @@ async function onPriceScanned(newPrice) {
     <!-- Total footer -->
     <div
       v-if="listTotal > 0"
-      class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-40"
+      class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-40 safe-bottom"
     >
       <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
         <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Gesamt</span>
@@ -483,10 +489,10 @@ async function onPriceScanned(newPrice) {
     <!-- Create modal -->
     <div
       v-if="showModal"
-      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      class="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 overflow-y-auto"
       @click.self="closeModal"
     >
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md sm:mx-4 px-6 pt-6 pb-8">
         <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Neuer Artikel</h2>
         <form @submit.prevent="submitCreate" class="space-y-4">
           <div>
@@ -541,7 +547,7 @@ async function onPriceScanned(newPrice) {
               class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <div class="flex gap-3 pt-2">
+          <div class="flex gap-3 pt-4">
             <button
               type="button"
               @click="closeModal"
@@ -578,13 +584,13 @@ async function onPriceScanned(newPrice) {
     <!-- Share modal -->
     <div
       v-if="showShareModal"
-      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      class="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50"
       @click.self="showShareModal = false"
     >
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6 text-center">
+      <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm sm:mx-4 px-6 pt-6 pb-8 text-center">
         <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">Liste teilen</h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Teile diesen Code, damit andere Benutzer der Liste beitreten können.</p>
-        <div class="bg-gray-100 dark:bg-gray-700 rounded-xl py-4 px-6 mb-4">
+        <div class="bg-gray-100 dark:bg-gray-700 rounded-xl py-4 px-6 mb-6">
           <span class="text-3xl font-mono font-bold tracking-widest text-gray-800 dark:text-gray-100">
             {{ list?.shareCode ?? '------' }}
           </span>
@@ -601,10 +607,10 @@ async function onPriceScanned(newPrice) {
     <!-- Edit modal -->
     <div
       v-if="showEditModal"
-      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      class="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 overflow-y-auto"
       @click.self="closeEditModal"
     >
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md sm:mx-4 px-6 pt-6 pb-8">
         <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Artikel bearbeiten</h2>
         <form @submit.prevent="submitEdit" class="space-y-4">
           <div>
@@ -657,7 +663,7 @@ async function onPriceScanned(newPrice) {
               class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <div class="flex gap-3 pt-2">
+          <div class="flex gap-3 pt-4">
             <button
               type="button"
               @click="closeEditModal"

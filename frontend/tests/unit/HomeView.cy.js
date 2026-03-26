@@ -42,7 +42,7 @@ describe('HomeView', () => {
   })
 
   it('shows the create button', () => {
-    cy.contains('+ Neue Liste erstellen').should('be.visible')
+    cy.contains('+ Neue Liste').should('be.visible')
   })
 
   it('calls loadLists on mount', () => {
@@ -72,26 +72,26 @@ describe('HomeView', () => {
   })
 
   it('opens the create modal on button click', () => {
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.contains('h2', 'Neue Liste erstellen').should('be.visible')
     cy.get('input[placeholder="z.B. Wocheneinkauf"]').should('be.visible')
     cy.get('input[placeholder="z.B. Lebensmittel"]').should('be.visible')
   })
 
   it('closes modal on Abbrechen click', () => {
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.contains('button', 'Abbrechen').click()
     cy.contains('h2', 'Neue Liste erstellen').should('not.exist')
   })
 
   it('does not call createList when name is empty', () => {
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.contains('button', 'Erstellen').click()
     cy.wrap(store.createList).should('not.have.been.called')
   })
 
   it('calls createList with name and category on valid submit', () => {
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.get('input[placeholder="z.B. Wocheneinkauf"]').type('Test Liste')
     cy.get('input[placeholder="z.B. Lebensmittel"]').type('Test Kategorie')
     cy.contains('button', 'Erstellen').click()
@@ -99,7 +99,7 @@ describe('HomeView', () => {
   })
 
   it('closes modal after successful create', () => {
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.get('input[placeholder="z.B. Wocheneinkauf"]').type('Test Liste')
     cy.contains('button', 'Erstellen').click()
     cy.contains('h2', 'Neue Liste erstellen').should('not.exist')

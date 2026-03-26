@@ -47,7 +47,7 @@ describe('Dark/Light Mode (E2E)', () => {
 
   it('Toggle ist auch auf der Artikelseite vorhanden', () => {
     cy.clearPouchDB()
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.get('input[placeholder="z.B. Wocheneinkauf"]').type('Testliste')
     cy.contains('button', 'Erstellen').click()
     cy.contains('Testliste').click()
@@ -60,7 +60,7 @@ describe('Dark/Light Mode (E2E)', () => {
     cy.clearPouchDB()
     cy.get('button[title="Dark Mode"]').click()
     assertDarkMode(true)
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.get('input[placeholder="z.B. Wocheneinkauf"]').type('Testliste')
     cy.contains('button', 'Erstellen').click()
     cy.contains('Testliste').click()
