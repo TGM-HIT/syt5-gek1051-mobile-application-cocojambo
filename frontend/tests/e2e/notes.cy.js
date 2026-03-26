@@ -4,7 +4,7 @@ describe('Notizen zu Artikeln', () => {
   function createListAndOpen() {
     cy.visit('/')
     cy.clearPouchDB()
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.get('input[placeholder="z.B. Wocheneinkauf"]').type(listName)
     cy.contains('button', 'Erstellen').click()
     cy.contains(listName).click()
