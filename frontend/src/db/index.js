@@ -11,6 +11,21 @@ const remoteUrl = `http://${couchUser}:${couchPassword}@${couchHost}:${couchPort
 
 const syncHandler = db.sync(remoteUrl, { live: true, retry: true })
 
+// Sync pull listeners — fires only for incoming remote changes
+const syncPullListeners = new Set()
+syncHandler.on('change', (info) => {
+  if (info.direction === 'pull') {
+    for (const doc of info.change.docs) {
+      for (const cb of syncPullListeners) cb(doc)
+    }
+  }
+})
+
+function onRemoteChange(callback) {
+  syncPullListeners.add(callback)
+  return () => syncPullListeners.delete(callback)
+}
+
 // Live changes feed — fires for both local writes and incoming replication
 const changesListeners = new Set()
 const changesFeed = db.changes({ since: 'now', live: true, include_docs: true })
@@ -60,4 +75,4 @@ function generateShareCode() {
   return code
 }
 
-export { db, remoteUrl, onDbChange, getUsername, setUsername, hasUsername, generateShareCode }
+export { db, remoteUrl, onDbChange, onRemoteChange, getUsername, setUsername, hasUsername, generateShareCode }
