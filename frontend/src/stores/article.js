@@ -16,7 +16,8 @@ export const useArticleStore = defineStore('article', {
       this.stopLiveSync()
       this._currentListId = listId
       this._unsubscribe = onDbChange((change) => {
-        if (change.doc && (change.doc.type === 'article' || change.doc.type === 'check-event' || change.deleted)) {
+        const type = change.doc?.type
+        if (change.deleted || type === 'article' || type === 'check-event' || type === 'delete-intent') {
           this.loadArticles(this._currentListId)
         }
       })
@@ -34,8 +35,12 @@ export const useArticleStore = defineStore('article', {
       const result = await db.allDocs({ include_docs: true })
       const all = result.rows.map((row) => row.doc)
 
+      const deletedIds = new Set(
+        all.filter((doc) => doc.type === 'delete-intent').map((doc) => doc.articleId)
+      )
+
       const articleDocs = all
-        .filter((doc) => doc.type === 'article' && doc.listId === listId)
+        .filter((doc) => doc.type === 'article' && doc.listId === listId && !deletedIds.has(doc._id))
         .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
       this.articles = articleDocs.filter((doc) => !doc.hidden)
       this.hiddenArticles = articleDocs.filter((doc) => doc.hidden)
@@ -103,7 +108,15 @@ export const useArticleStore = defineStore('article', {
     },
 
     async deleteArticle(listId, id, rev) {
-      await db.remove(id, rev)
+      await db.put({
+        _id: `delete-intent-${id}`,
+        type: 'delete-intent',
+        articleId: id,
+        listId,
+        deletedAt: new Date().toISOString(),
+        deletedBy: getUsername(),
+      })
+      try { await db.remove(id, rev) } catch { /* rev may be stale if article was edited offline */ }
       await this.loadArticles(listId)
     },
 
