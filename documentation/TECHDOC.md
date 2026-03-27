@@ -87,18 +87,99 @@ App.vue
 
 **Beteiligte Dateien:**
 
-- `frontend/src/db/index.js` — Sync-Konfiguration
+- `frontend/src/db/index.js` — Sync-Konfiguration und Change-Listener
+- `frontend/src/stores/article.js` — Konfliktbehandlung, Patch- und Intent-Logik
+- `frontend/src/stores/shoppingList.js` — Live-Reaktion auf Listenänderungen
 
-**Technischer Ablauf:**
+---
 
-1. Beim App-Start wird eine bidirektionale Live-Synchronisation gestartet:
-   
-   ```js
-   db.sync(remoteUrl, { live: true, retry: true })
-   ```
-2. `live: true` hält die Verbindung dauerhaft offen und synchronisiert Änderungen in Echtzeit.
-3. `retry: true` sorgt dafür, dass bei Verbindungsabbruch automatisch erneut versucht wird zu synchronisieren.
-4. Konflikte werden über PouchDBs MVCC-Modell (Multi-Version Concurrency Control) und Revision-History gelöst.
+### Grundlegende Synchronisation
+
+Beim App-Start wird in `db/index.js` eine bidirektionale Live-Synchronisation zwischen der lokalen PouchDB und der entfernten CouchDB gestartet:
+
+```js
+db.sync(remoteUrl, { live: true, retry: true })
+```
+
+- `live: true` hält die Verbindung dauerhaft offen und überträgt Änderungen in Echtzeit.
+- `retry: true` stellt die Verbindung nach einem Abbruch automatisch wieder her — auch nach längerer Offline-Zeit.
+
+Alle Lese- und Schreiboperationen erfolgen immer zuerst lokal in PouchDB (IndexedDB). Sobald eine Verbindung besteht, werden ausstehende lokale Änderungen automatisch mit CouchDB abgeglichen.
+
+---
+
+### Change-Listener und UI-Reaktivität
+
+Damit die Oberfläche bei eingehenden Synchronisationsänderungen sofort aktualisiert wird, stellt `db/index.js` zwei Arten von Listener-Funktionen bereit:
+
+- **`onDbChange(callback)`** — wird bei jeder Änderung der lokalen Datenbank ausgelöst, egal ob durch eine eigene Aktion oder durch eingehende Replikation. Wird von `startLiveSync()` in den Stores genutzt, um beim Eintreffen fremder Änderungen die Ansicht neu zu laden.
+- **`onRemoteChange(callback)`** — wird ausschließlich bei eingehenden Änderungen vom Server ausgelöst (Pull-Richtung). Wird vom Benachrichtigungs-Store genutzt, um Push-Benachrichtigungen bei neuen Artikeln anderer Nutzer anzuzeigen.
+
+In `useArticleStore.startLiveSync(listId)` lauscht der Store auf alle relevanten Dokumenttypen und ruft bei jeder Änderung `loadArticles()` auf:
+
+```js
+onDbChange((change) => {
+  const type = change.doc?.type
+  if (change.deleted || type === 'article' || type === 'article-patch'
+      || type === 'check-event' || type === 'delete-intent') {
+    this.loadArticles(this._currentListId)
+  }
+})
+```
+
+---
+
+### Konfliktbehandlung: Delete Wins
+
+PouchDB/CouchDB löst Konflikte standardmäßig nach dem Prinzip „Last Write Wins" auf Dokumentebene. Das bedeutet: wenn ein Nutzer einen Artikel offline löscht und ein anderer ihn gleichzeitig bearbeitet, könnte nach der Synchronisation die Bearbeitung gewinnen und der gelöschte Artikel wieder erscheinen.
+
+Um sicherzustellen, dass Löschungen immer gewinnen, wird beim endgültigen Löschen eines Artikels zusätzlich ein **`delete-intent`-Dokument** geschrieben:
+
+```json
+{
+  "_id": "delete-intent-{articleId}",
+  "type": "delete-intent",
+  "articleId": "...",
+  "listId": "...",
+  "deletedAt": "2026-03-27T10:00:00.000Z",
+  "deletedBy": "Alice#a1b2"
+}
+```
+
+Da dieses Dokument eine feste, eindeutige `_id` hat und keinen Inhalt des Artikels enthält, kann es nie mit Bearbeitungen in Konflikt geraten — es synchronisiert sich unabhängig davon, ob der Artikel selbst noch existiert oder wie er zuletzt aussah. `loadArticles()` filtert alle Artikel heraus, für die ein `delete-intent`-Eintrag vorhanden ist, noch bevor Patches angewendet werden.
+
+---
+
+### Konfliktbehandlung: Feldweise Zusammenführung bei Offline-Bearbeitungen
+
+Wenn zwei Nutzer denselben Artikel offline bearbeiten, würde PouchDBs Standardverhalten die gesamte Änderung eines Nutzers verwerfen. Um stattdessen feldweise zu mergen (und bei Konflikten auf demselben Feld den zuletzt Schreibenden gewinnen zu lassen), werden Bearbeitungen nicht mehr direkt in das Artikel-Dokument geschrieben, sondern als separate **`article-patch`-Dokumente**:
+
+```json
+{
+  "_id": "patch-{articleId}-{timestamp}-{random}",
+  "type": "article-patch",
+  "articleId": "...",
+  "listId": "...",
+  "fields": { "name": "Biomilch", "price": 2.49 },
+  "editedBy": "Bob#c3d4",
+  "editedAt": "2026-03-27T10:05:00.000Z"
+}
+```
+
+Da jedes Patch-Dokument eine eindeutige `_id` (aus Artikel-ID, Zeitstempel und Zufallswert) erhält, können zwei Nutzer offline beliebig viele Patches erstellen, ohne dass diese miteinander in Konflikt geraten. Beim Laden wird `applyPatches()` aufgerufen, das alle Patches eines Artikels chronologisch nach `editedAt` zusammenführt:
+
+- **Gleiche Felder** (z. B. beide ändern den Preis): Das spätere Patch gewinnt — Last Write Wins pro Feld.
+- **Verschiedene Felder** (z. B. einer ändert den Namen, der andere den Preis): Beide Patches werden angewendet — alle Änderungen bleiben erhalten.
+
+`Menge` und `Einheit` werden dabei immer als untrennbares Paar in dasselbe Patch geschrieben, da eine isolierte Änderung nur eines der beiden Felder inhaltlich keinen Sinn ergibt.
+
+Preisänderungen schreiben zusätzlich einen `priceHistoryEntry` ins Patch, sodass `applyPatches()` beim Laden die vollständige Preishistorie aus allen Patches aller Nutzer rekonstruieren kann:
+
+```js
+const priceHistory = [...(base.priceHistory || []), ...newPriceEntries]
+  .sort((a, b) => new Date(a.setAt) - new Date(b.setAt))
+  .slice(-20)
+```
 
 ---
 
@@ -111,22 +192,75 @@ App.vue
 **Beteiligte Dateien:**
 
 - `frontend/src/stores/shoppingList.js` — Listen-Sortierung
-- `frontend/src/stores/article.js` — Artikel-Sortierung
+- `frontend/src/stores/article.js` — Artikel-Sortierung, Check-Event-Logik
+- `frontend/src/views/ArticleListView.vue` — Anzeige der Abhakvorgänge
 
-**Technischer Ablauf:**
+---
 
-1. Jedes Dokument enthält ein `createdAt`-Feld mit ISO-Timestamp.
-2. Listen werden absteigend sortiert (neueste zuerst):
-   
-   ```js
-   .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-   ```
-3. Artikel werden aufsteigend sortiert (älteste zuerst):
-   
-   ```js
-   .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-   ```
-4. Nach der Synchronisation werden die Timestamps verwendet, um die Reihenfolge der Änderungen korrekt darzustellen — z.B. wer ein Produkt zuerst abgehakt hat.
+### Chronologische Sortierung
+
+Jedes Dokument enthält ein `createdAt`-Feld mit ISO-8601-Timestamp, der beim Erstellen lokal gesetzt wird. Die Sortierung erfolgt in `loadArticles()` bzw. `loadLists()`:
+
+- **Listen** werden absteigend sortiert (neueste zuerst):
+  
+  ```js
+  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  ```
+
+- **Artikel** werden aufsteigend sortiert (älteste zuerst, d. h. in der Reihenfolge, in der sie hinzugefügt wurden):
+  
+  ```js
+  .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+  ```
+
+Da die Timestamps lokal beim Erstellen vergeben werden, spiegelt die Reihenfolge nach der Synchronisation die tatsächliche zeitliche Abfolge der Aktionen aller Nutzer wider.
+
+---
+
+### Abhakvorgänge: Wer hat wann abgehakt?
+
+Wenn zwei oder mehr Nutzer denselben Artikel offline abhaken und anschließend synchronisieren, würde das `checked`-Feld des Artikel-Dokuments nach PouchDBs standardmäßigem „Last Write Wins" nur einen einzigen Vorgang festhalten — der andere ginge verloren.
+
+Um alle Abhakvorgänge aller Nutzer lückenlos zu erfassen, wird beim Abhaken eines Artikels zusätzlich ein eigenständiges **`check-event`-Dokument** erstellt:
+
+```json
+{
+  "_id": "check-{timestamp}-{random}",
+  "type": "check-event",
+  "articleId": "...",
+  "listId": "...",
+  "checkedBy": "Alice#a1b2",
+  "checkedAt": "2026-03-27T10:05:00.000Z"
+}
+```
+
+Da jedes Dokument eine eindeutige `_id` erhält (aus Zeitstempel und Zufallswert), können zwei Nutzer offline dasselbe Artikel abhaken, ohne dass ihre Ereignisse in Konflikt geraten — beide Dokumente existieren nach der Synchronisation gleichzeitig in der Datenbank.
+
+**Laden und Gruppieren:**
+
+`loadArticles()` lädt alle `check-event`-Dokumente der aktuellen Liste, sortiert sie nach `checkedAt` und gruppiert sie nach `articleId`:
+
+```js
+all
+  .filter((doc) => doc.type === 'check-event' && doc.listId === listId)
+  .sort((a, b) => new Date(a.checkedAt) - new Date(b.checkedAt))
+  .forEach((event) => {
+    if (!eventsByArticle[event.articleId]) eventsByArticle[event.articleId] = []
+    eventsByArticle[event.articleId].push(event)
+  })
+this.checkEvents = eventsByArticle
+```
+
+**Anzeige in der UI:**
+
+In `ArticleListView.vue` werden unterhalb jedes Artikels, für den Abhak-Ereignisse vorliegen, alle Vorgänge in chronologischer Reihenfolge angezeigt. Der `#xxxx`-Suffix des Benutzernamens wird dabei für die Lesbarkeit abgeschnitten:
+
+```
+✓ Alice, 27.3.2026 um 10:05 Uhr
+✓ Bob, 27.3.2026 um 10:08 Uhr
+```
+
+Ereignisse beim Entfernen des Hakens werden nicht erfasst — nur das Setzen des Hakens wird protokolliert. Wird ein Artikel erneut abgehakt, fügt sich der neue Eintrag chronologisch ans Ende der Liste.
 
 ---
 
@@ -192,18 +326,18 @@ Damit die Synchronisation zwischen verschiedenen Geräten funktioniert, sind zwe
 1. **CouchDB-URL:** Die Verbindung zur CouchDB wird über einzelne Umgebungsvariablen in `frontend/.env` konfiguriert (siehe `frontend/.env.example` als Vorlage). Die Variablen `VITE_COUCHDB_USER`, `VITE_COUCHDB_PASSWORD`, `VITE_COUCHDB_HOST`, `VITE_COUCHDB_PORT` und `VITE_COUCHDB_DB` werden in `db/index.js` zur Remote-URL zusammengesetzt. `VITE_COUCHDB_HOST` muss auf die IP des CouchDB-Servers gesetzt werden (nicht `localhost`), damit andere Geräte im Netzwerk die gleiche Datenbank erreichen.
 
 2. **CORS:** CouchDB muss Cross-Origin-Requests erlauben, da Frontend (z.B. Port 5173) und CouchDB (Port 5984) unterschiedliche Origins sind. Die CORS-Konfiguration wird über `couchdb/local.ini` eingebunden:
-
+   
    ```ini
    [httpd]
    enable_cors = true
-
+   
    [cors]
    origins = *
    methods = GET, PUT, POST, HEAD, DELETE
    credentials = true
    headers = accept, authorization, content-type, origin, referer
    ```
-
+   
    Diese Datei wird in `docker-compose.yaml` als Volume gemountet.
 
 ---
@@ -431,18 +565,96 @@ Aktuell läuft die Synchronisation automatisch (`live: true`). Die Implementieru
 
 > Als Benutzer möchte ich die Möglichkeit haben, Barcodes der Produkte scannen zu können und die Nährwerte angezeigt zu bekommen.
 
-**Status:** Nicht implementiert
+**Status:** Implementiert
 
-**Geplante Technologien (laut TECHSTACK.md):**
+**Beteiligte Dateien:**
 
-- `html5-qrcode` für Barcode-Scanning
-- Open Food Facts API für Nährwertdaten
+- `frontend/src/views/BarcodeScanner.vue` — Scan-Komponente (Kamera, Produktsuche, Nährwertanzeige)
+- `frontend/src/views/ArticleListView.vue` — Einbindung und Weiterverarbeitung des Scan-Ergebnisses
 
-Die Implementierung würde erfordern:
+---
 
-- Eine Scan-Komponente mit `html5-qrcode`
-- API-Anbindung an Open Food Facts
-- Anzeige der Nährwerte (Kcal, Proteine, Fette, Kohlenhydrate)
+### Technischer Ablauf
+
+#### 1. Kamera-Scan
+
+`BarcodeScanner.vue` wird beim Mounten über `@zxing/browser` (Bibliothek für Barcode-Erkennung im Browser) initialisiert — ursprünglich war `html5-qrcode` geplant, umgesetzt wurde es mit der leistungsfähigeren `BrowserMultiFormatReader`-Klasse, die neben QR-Codes auch gängige 1D-Barcodes (EAN-13, EAN-8 u. a.) erkennt:
+
+```js
+reader = new BrowserMultiFormatReader()
+await reader.decodeFromVideoDevice(undefined, videoRef.value, async (result, err) => {
+  if (result && !didScan) {
+    didScan = true
+    BrowserMultiFormatReader.releaseAllStreams()
+    nutritionData.value = await lookupProduct(result.getText())
+  }
+})
+```
+
+Das `didScan`-Flag verhindert, dass ein erkannter Barcode mehrfach verarbeitet wird. Nach dem ersten Fund werden alle Kamera-Streams sofort freigegeben.
+
+Als Fallback kann der Barcode auch manuell über ein Textfeld eingegeben werden, falls die Kamera nicht verfügbar ist oder der Scan fehlschlägt.
+
+#### 2. Produktsuche via Open Food Facts
+
+Die Funktion `lookupProduct(barcode)` ruft die öffentliche Open Food Facts API ab:
+
+```
+GET https://world.openfoodfacts.org/api/v0/product/{barcode}.json
+```
+
+Bei Erfolg (`status === 1`) werden Produktname und Nährwerte extrahiert. Der deutsche Produktname (`product_name_de`) wird bevorzugt, fällt dieser weg, wird auf den allgemeinen Namen zurückgegriffen. Ist das Produkt nicht in der Datenbank, wird der Barcode-String selbst als Produktname verwendet.
+
+Folgende Nährwerte pro 100 g werden ausgelesen, sofern vorhanden:
+
+| Feld                        | Einheit |
+| --------------------------- | ------- |
+| Energie                     | kcal    |
+| Fett                        | g       |
+| davon gesättigte Fettsäuren | g       |
+| Kohlenhydrate               | g       |
+| davon Zucker                | g       |
+| Ballaststoffe               | g       |
+| Eiweiß                      | g       |
+| Salz                        | g       |
+
+Felder mit dem Wert `null` werden aus der Anzeige herausgefiltert.
+
+#### 3. Nährwert-Anzeige und Preiseingabe
+
+Nach dem Scan wechselt die Komponente von der Kameraansicht zur Produktkarte. Diese zeigt den Produktnamen, die verfügbaren Nährwerte und ein optionales Preisfeld. Der Nutzer kann einen Preis ergänzen oder das Feld leer lassen.
+
+#### 4. Übergabe an die Artikelliste
+
+Beim Bestätigen emittiert `BarcodeScanner.vue` das `scanned`-Event mit Name, Barcode und optionalem Preis:
+
+```js
+emit('scanned', {
+  name: nutritionData.value.name,
+  barcode: nutritionData.value.barcode,
+  price: scannedPrice.value ?? null,
+})
+```
+
+`ArticleListView.vue` fängt dieses Event in `onBarcodeScanned()` ab und befüllt damit das Artikel-Erstellen-Modal vor:
+
+```js
+function onBarcodeScanned({ name, barcode, price }) {
+  showScanner.value = false
+  newName.value = name
+  newBarcode.value = barcode || null
+  newPrice.value = price || null
+  newQuantity.value = 1
+  newUnit.value = ''
+  showModal.value = true
+}
+```
+
+Der Nutzer kann Name, Menge und weitere Felder noch anpassen, bevor der Artikel tatsächlich zur Liste hinzugefügt wird. Barcode und Preis werden im Artikel-Dokument gespeichert.
+
+#### 5. Ressourcenverwaltung
+
+`BrowserMultiFormatReader.releaseAllStreams()` wird sowohl nach erfolgreichem Scan, nach manueller Eingabe als auch beim Schließen der Komponente (`onUnmounted`) aufgerufen, um den Kamera-Stream zuverlässig freizugeben und Ressourcenlecks zu vermeiden.
 
 ---
 
