@@ -128,8 +128,10 @@ async function submitEdit() {
 
   const changedFields = {}
   if (editName.value.trim() !== article.name) changedFields.name = editName.value.trim()
-  if (editQuantity.value !== article.quantity) changedFields.quantity = editQuantity.value
-  if (editUnit.value.trim() !== (article.unit || '')) changedFields.unit = editUnit.value.trim()
+  if (editQuantity.value !== article.quantity || editUnit.value.trim() !== (article.unit || '')) {
+    changedFields.quantity = editQuantity.value
+    changedFields.unit = editUnit.value.trim()
+  }
   if (editNote.value.trim() !== (article.note || '')) changedFields.note = editNote.value.trim()
   if (newPrice !== article.price && newPrice == null) changedFields.price = null
 
