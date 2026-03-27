@@ -6,6 +6,8 @@ import { useShoppingListStore } from '../stores/shoppingList.js'
 import { useThemeStore } from '../stores/theme.js'
 import BarcodeScanner from './BarcodeScanner.vue'
 import PriceTagScanner from './PriceTagScanner.vue'
+import ManualSyncButton from '../components/sync/ManualSyncButton.vue'
+import SyncHistoryLogs from '../components/sync/SyncHistoryLogs.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -215,6 +217,10 @@ async function onPriceScanned(newPrice) {
             {{ themeStore.isDark ? '☀️' : '🌙' }}
           </button>
         </div>
+        <!-- Sync Feature (Issue #22) -->
+        <div class="w-full mb-3 flex justify-center">
+          <ManualSyncButton />
+        </div>
         <!-- Bottom row: action buttons -->
         <div class="flex gap-2">
           <button
@@ -349,6 +355,10 @@ async function onPriceScanned(newPrice) {
 
     <!-- Article list -->
     <main class="max-w-3xl mx-auto px-4 py-6" :class="{ 'pb-20': listTotal > 0 }">
+      
+      <!-- Display sync history metrics directly above the list -->
+      <SyncHistoryLogs />
+
       <div v-if="articleStore.articles.length === 0" class="text-center text-gray-400 dark:text-gray-500 mt-16">
         <p class="text-lg">Noch keine Artikel vorhanden.</p>
         <p class="text-sm mt-1">Füge deinen ersten Artikel hinzu!</p>
