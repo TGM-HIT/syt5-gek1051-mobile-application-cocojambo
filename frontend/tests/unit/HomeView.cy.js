@@ -125,7 +125,8 @@ describe('HomeView', () => {
   it('shows the correct list name in the delete modal', () => {
     store.lists = [mockLists[0]]
     cy.get('button[title="Liste löschen"]').click()
-    cy.contains('Möchtest du die Liste "Wocheneinkauf" wirklich löschen?').should('be.visible')
+    // The name is rendered inside its own <span> with typographic quotes
+    cy.contains('span', '„Wocheneinkauf"').should('be.visible')
   })
 
   it('closes delete modal after successful deletion', () => {
