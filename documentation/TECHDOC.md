@@ -457,3 +457,89 @@ Diese Funktion ist noch nicht umgesetzt. Die Implementierung würde erfordern:
 - Kamerazugriff und Bildverarbeitung
 - OCR zur Erkennung von Produktnamen auf Rechnungen
 - Abgleich mit bestehenden Artikeln in der Liste und automatisches Abhaken
+
+---
+
+## CI/CD — Automatisches Deployment auf Oracle Cloud
+
+### Übersicht
+
+Bei jedem Push auf `main` wird automatisch ein GitHub Actions Workflow ausgelöst, der die Applikation auf der Oracle Cloud VM deployt. Der Workflow verbindet sich per SSH mit der VM und führt dort die notwendigen Befehle aus.
+
+**Workflow-Datei:** `.github/workflows/deploy-oracle.yml`
+
+### Ablauf
+
+```
+Push auf main
+     │
+     ▼
+GitHub Actions startet
+     │
+     ▼
+SSH-Verbindung zur Oracle Cloud VM
+     │
+     ├── git pull origin main       (neuesten Code holen)
+     ├── docker compose up -d --build --remove-orphans  (Container neu bauen)
+     ├── docker image prune -f      (alte Images aufräumen)
+     └── docker compose ps          (Status ausgeben)
+```
+
+### Voraussetzungen
+
+**Einmalig auf der Oracle Cloud VM:**
+
+Das Setup-Script muss einmalig ausgeführt worden sein:
+
+```bash
+bash deploy/setup-oracle-vm.sh
+```
+
+Dies installiert Docker, öffnet die Firewall-Ports (80, 443, 5984) und klont das Repository nach `~/cocojambo`.
+
+Danach müssen die Umgebungsvariablen konfiguriert werden:
+
+```bash
+cd ~/cocojambo
+cp .env.example .env
+nano .env  # CouchDB-Credentials eintragen
+cp frontend/.env.example frontend/.env
+nano frontend/.env  # VITE_COUCHDB_HOST auf öffentliche VM-IP setzen
+```
+
+### GitHub Secrets konfigurieren
+
+Im GitHub Repository unter **Settings → Secrets and variables → Actions** müssen folgende Secrets hinterlegt werden:
+
+| Secret | Beschreibung | Beispiel |
+|--------|-------------|---------|
+| `ORACLE_HOST` | Öffentliche IP der Oracle Cloud VM | `130.61.x.x` |
+| `ORACLE_USER` | SSH-Benutzername auf der VM | `ubuntu` |
+| `ORACLE_SSH_KEY` | Privater SSH-Key (gesamter Inhalt der `.pem`-Datei) | `-----BEGIN RSA PRIVATE KEY-----...` |
+
+Der SSH-Key kann beim Erstellen der Oracle Cloud Instanz heruntergeladen werden. Der Inhalt der `.pem`-Datei wird vollständig in das Secret `ORACLE_SSH_KEY` eingefügt.
+
+### Workflow manuell auslösen
+
+Neben dem automatischen Trigger bei Push auf `main` kann der Workflow auch manuell ausgelöst werden:
+
+**GitHub UI:** Repository → Actions → "Deploy to Oracle Cloud" → "Run workflow"
+
+### Erreichbare Services nach dem Deployment
+
+| Service | URL |
+|---------|-----|
+| Frontend (nginx) | `http://<ORACLE_HOST>` |
+| Frontend (HTTPS) | `https://<ORACLE_HOST>` |
+| CouchDB | `http://<ORACLE_HOST>:5984` |
+| CouchDB Admin UI | `http://<ORACLE_HOST>:5984/_utils` |
+
+### Troubleshooting
+
+| Problem | Lösung |
+|---------|--------|
+| Workflow schlägt bei SSH fehl | `ORACLE_HOST`, `ORACLE_USER` und `ORACLE_SSH_KEY` in GitHub Secrets prüfen |
+| `git pull` schlägt fehl | Auf der VM prüfen: `cd ~/cocojambo && git status` — evtl. lokale Änderungen vorhanden |
+| Docker Build schlägt fehl | Auf der VM prüfen: `cd ~/cocojambo && docker compose logs` |
+| Seite nicht erreichbar | Firewall-Ports prüfen: `sudo iptables -L INPUT -n` — Ports 80 und 443 müssen offen sein |
+| `.env` fehlt | Auf der VM: `cp .env.example .env` und Werte eintragen |
