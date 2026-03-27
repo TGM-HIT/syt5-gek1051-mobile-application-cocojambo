@@ -1,18 +1,20 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { useShoppingListStore } from '../../src/stores/shoppingList.js'
-import { seedLists } from '../../src/db/seedData.js'
 import HomeView from '../../src/views/HomeView.vue'
 
+const TEST_USERNAME = 'TestUser#abcd'
+
 const mockLists = [
-  { ...seedLists[0], _rev: '1-abc' },
-  { ...seedLists[1], category: '', _rev: '1-def' },
+  { _id: 'seed-list-1', type: 'list', name: 'Wocheneinkauf', category: 'Lebensmittel', members: [TEST_USERNAME], shareCode: 'WCH3NK', createdAt: '2024-01-10T08:00:00.000Z', _rev: '1-abc' },
+  { _id: 'seed-list-2', type: 'list', name: 'Baumarkt', category: '', members: [TEST_USERNAME], shareCode: 'BAU4MK', createdAt: '2024-01-12T10:00:00.000Z', _rev: '1-def' },
 ]
 
 describe('HomeView', () => {
   let store
 
   beforeEach(() => {
+    localStorage.setItem('username', TEST_USERNAME)
     const pinia = createPinia()
     setActivePinia(pinia)
     store = useShoppingListStore()
@@ -40,7 +42,7 @@ describe('HomeView', () => {
   })
 
   it('shows the create button', () => {
-    cy.contains('+ Neue Liste erstellen').should('be.visible')
+    cy.contains('+ Neue Liste').should('be.visible')
   })
 
   it('calls loadLists on mount', () => {
@@ -70,26 +72,26 @@ describe('HomeView', () => {
   })
 
   it('opens the create modal on button click', () => {
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.contains('h2', 'Neue Liste erstellen').should('be.visible')
     cy.get('input[placeholder="z.B. Wocheneinkauf"]').should('be.visible')
     cy.get('input[placeholder="z.B. Lebensmittel"]').should('be.visible')
   })
 
   it('closes modal on Abbrechen click', () => {
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.contains('button', 'Abbrechen').click()
     cy.contains('h2', 'Neue Liste erstellen').should('not.exist')
   })
 
   it('does not call createList when name is empty', () => {
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.contains('button', 'Erstellen').click()
     cy.wrap(store.createList).should('not.have.been.called')
   })
 
   it('calls createList with name and category on valid submit', () => {
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.get('input[placeholder="z.B. Wocheneinkauf"]').type('Test Liste')
     cy.get('input[placeholder="z.B. Lebensmittel"]').type('Test Kategorie')
     cy.contains('button', 'Erstellen').click()
@@ -97,7 +99,7 @@ describe('HomeView', () => {
   })
 
   it('closes modal after successful create', () => {
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.get('input[placeholder="z.B. Wocheneinkauf"]').type('Test Liste')
     cy.contains('button', 'Erstellen').click()
     cy.contains('h2', 'Neue Liste erstellen').should('not.exist')

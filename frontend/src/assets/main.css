@@ -1,1 +1,34 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Prevent iOS Safari zoom on input focus (requires font-size >= 16px) */
+@media screen and (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 1rem !important;
+  }
+}
+
+/* Safe area inset utilities for notched iPhones */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Notification slide animation */
+.notification-enter-active {
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+.notification-leave-active {
+  transition: transform 0.3s ease-in, opacity 0.3s ease-in;
+}
+.notification-enter-from,
+.notification-leave-to {
+  transform: translateY(-100%);
+  opacity: 0;
+}

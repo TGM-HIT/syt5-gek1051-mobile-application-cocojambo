@@ -10,6 +10,7 @@ const error = ref(null)
 const manualBarcode = ref('')
 const manualLoading = ref(false)
 const nutritionData = ref(null)
+const scannedPrice = ref(null)
 let didScan = false
 let reader = null
 
@@ -22,6 +23,7 @@ onMounted(async () => {
         BrowserMultiFormatReader.releaseAllStreams()
         statusMessage.value = 'Barcode erkannt, Produkt wird gesucht...'
         nutritionData.value = await lookupProduct(result.getText())
+        scannedPrice.value = null
       }
       if (err && err.name !== 'NotFoundException') {
         error.value = err.message
@@ -42,6 +44,7 @@ async function lookupProduct(barcode) {
       const n = p.nutriments || {}
       return {
         name: p.product_name_de || p.product_name || barcode,
+        barcode,
         per100g: [
           { label: 'Energie', value: n['energy-kcal_100g'] ?? null, unit: 'kcal' },
           { label: 'Fett', value: n['fat_100g'] ?? null, unit: 'g' },
@@ -57,7 +60,7 @@ async function lookupProduct(barcode) {
   } catch {
     // ignore network errors
   }
-  return { name: barcode, per100g: [] }
+  return { name: barcode, barcode, per100g: [] }
 }
 
 async function submitManual() {
@@ -66,11 +69,16 @@ async function submitManual() {
   manualLoading.value = true
   BrowserMultiFormatReader.releaseAllStreams()
   nutritionData.value = await lookupProduct(barcode)
+  scannedPrice.value = null
   manualLoading.value = false
 }
 
 function confirmAdd() {
-  emit('scanned', nutritionData.value.name)
+  emit('scanned', {
+    name: nutritionData.value.name,
+    barcode: nutritionData.value.barcode,
+    price: scannedPrice.value ?? null,
+  })
 }
 
 function stopScanner() {
@@ -123,35 +131,52 @@ onUnmounted(() => {
     </div>
 
     <!-- Nutrition popup -->
-    <div v-else class="w-full max-w-md mx-4 bg-white rounded-2xl shadow-xl overflow-hidden">
-      <div class="px-5 py-4 border-b border-gray-100">
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Produkt</p>
-        <h2 class="text-lg font-bold text-gray-800">{{ nutritionData.name }}</h2>
+    <div v-else class="w-full max-w-md mx-4 bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+        <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1">Produkt</p>
+        <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">{{ nutritionData.name }}</h2>
       </div>
 
       <div class="px-5 py-4">
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+        <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">
           Nährwerte pro 100 g
         </p>
-        <div v-if="nutritionData.per100g.length > 0" class="divide-y divide-gray-100">
+        <div v-if="nutritionData.per100g.length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
           <div
             v-for="row in nutritionData.per100g"
             :key="row.label"
             class="flex justify-between py-2 text-sm"
           >
-            <span class="text-gray-600">{{ row.label }}</span>
-            <span class="font-medium text-gray-800">{{ row.value }} {{ row.unit }}</span>
+            <span class="text-gray-600 dark:text-gray-400">{{ row.label }}</span>
+            <span class="font-medium text-gray-800 dark:text-gray-100">{{ row.value }} {{ row.unit }}</span>
           </div>
         </div>
-        <p v-else class="text-sm text-gray-400 text-center py-2">
+        <p v-else class="text-sm text-gray-400 dark:text-gray-500 text-center py-2">
           Keine Nährwertangaben verfügbar.
         </p>
+
+        <div class="mt-4 border-t border-gray-100 pt-4">
+          <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+            Preis (optional)
+          </label>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-500">€</span>
+            <input
+              v-model.number="scannedPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="z.B. 2,49"
+              class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
       </div>
 
       <div class="px-5 pb-5 flex gap-3">
         <button
           @click="stopScanner"
-          class="flex-1 border border-gray-300 text-gray-700 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+          class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         >
           Abbrechen
         </button>

@@ -11,9 +11,37 @@ const remoteUrl = `http://${couchUser}:${couchPassword}@${couchHost}:${couchPort
 
 const syncHandler = db.sync(remoteUrl, { live: true, retry: true })
 
+// Sync pull listeners — fires only for incoming remote changes
+const syncPullListeners = new Set()
+syncHandler.on('change', (info) => {
+  if (info.direction === 'pull') {
+    for (const doc of info.change.docs) {
+      for (const cb of syncPullListeners) cb(doc)
+    }
+  }
+})
+
+function onRemoteChange(callback) {
+  syncPullListeners.add(callback)
+  return () => syncPullListeners.delete(callback)
+}
+
+// Live changes feed — fires for both local writes and incoming replication
+const changesListeners = new Set()
+const changesFeed = db.changes({ since: 'now', live: true, include_docs: true })
+changesFeed.on('change', (change) => {
+  for (const cb of changesListeners) cb(change)
+})
+
+function onDbChange(callback) {
+  changesListeners.add(callback)
+  return () => changesListeners.delete(callback)
+}
+
 // Expose helpers for Cypress tests: destroy for isolation, __db for stubbing.
 window.__destroyDB = () =>
   new Promise((resolve) => {
+    changesFeed.cancel()
     syncHandler.on('complete', () => {
       db.destroy().then(resolve).catch(resolve)
     })
@@ -21,15 +49,21 @@ window.__destroyDB = () =>
   })
 window.__db = db
 
-function getDeviceId() {
-  let id = localStorage.getItem('deviceId')
-  if (!id) {
-    const arr = new Uint8Array(16)
-    crypto.getRandomValues(arr)
-    id = Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('')
-    localStorage.setItem('deviceId', id)
-  }
-  return id
+function getUsername() {
+  return localStorage.getItem('username')
+}
+
+function setUsername(displayName) {
+  const arr = new Uint8Array(2)
+  crypto.getRandomValues(arr)
+  const suffix = Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('')
+  const username = `${displayName}#${suffix}`
+  localStorage.setItem('username', username)
+  return username
+}
+
+function hasUsername() {
+  return !!localStorage.getItem('username')
 }
 
 function generateShareCode() {
@@ -41,4 +75,4 @@ function generateShareCode() {
   return code
 }
 
-export { db, getDeviceId, generateShareCode }
+export { db, remoteUrl, onDbChange, onRemoteChange, getUsername, setUsername, hasUsername, generateShareCode }

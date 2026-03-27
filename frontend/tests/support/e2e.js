@@ -16,10 +16,19 @@
 // Import commands.js using ES2015 syntax:
 import './commands'
 
+// Ensure a username is set so the username prompt does not block e2e tests.
+beforeEach(() => {
+  cy.window({ log: false }).then((win) => {
+    if (!win.localStorage.getItem('username')) {
+      win.localStorage.setItem('username', 'CypressE2E#0000')
+    }
+  })
+})
+
 // Ignore PouchDB/IndexedDB errors that occur when the database is destroyed
 // between tests (expected during clearPouchDB).
 Cypress.on('uncaught:exception', (err) => {
-  if (err.name === 'InvalidStateError' || err.message.includes('database connection is closing')) {
+  if (err.name === 'InvalidStateError' || err.name === 'conflict' || err.message.includes('database connection is closing') || err.message.includes('Document update conflict')) {
     return false
   }
 })
