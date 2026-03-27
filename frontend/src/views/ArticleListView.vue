@@ -217,12 +217,9 @@ async function onPriceScanned(newPrice) {
             {{ themeStore.isDark ? '☀️' : '🌙' }}
           </button>
         </div>
-        <!-- Sync Feature (Issue #22) -->
-        <div class="w-full mb-3 flex justify-center">
-          <ManualSyncButton />
-        </div>
         <!-- Bottom row: action buttons -->
         <div class="flex gap-2">
+          <ManualSyncButton />
           <button
             @click="showShareModal = true"
             class="flex-1 border border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-medium py-2.5 rounded-lg transition-colors"
@@ -356,9 +353,6 @@ async function onPriceScanned(newPrice) {
     <!-- Article list -->
     <main class="max-w-3xl mx-auto px-4 py-6" :class="{ 'pb-20': listTotal > 0 }">
       
-      <!-- Display sync history metrics directly above the list -->
-      <SyncHistoryLogs />
-
       <div v-if="articleStore.articles.length === 0" class="text-center text-gray-400 dark:text-gray-500 mt-16">
         <p class="text-lg">Noch keine Artikel vorhanden.</p>
         <p class="text-sm mt-1">Füge deinen ersten Artikel hinzu!</p>
@@ -483,6 +477,10 @@ async function onPriceScanned(newPrice) {
           </div>
         </div>
       </div>
+      
+      <!-- Display subtle sync history metrics at the bottom of the list -->
+      <SyncHistoryLogs class="mt-8 mb-6" />
+      
     </main>
 
     <!-- Total footer -->
