@@ -34,12 +34,13 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useManualSyncStore } from '../../stores/manualSyncStore'
 import { ManualSyncService } from '../../services/ManualSyncService'
+import { remoteUrl } from '../../db/index.js'
 
 const syncStore = useManualSyncStore()
 const isOnline = ref(navigator.onLine)
 
-// Initialize Service (pointing to default local Pouch and generic remote for Issue #22)
-const syncService = new ManualSyncService('cocojambo-db', 'http://localhost:5984/cocojambo')
+// Initialize Service using the project's generic remote config
+const syncService = new ManualSyncService('shopping_lists', remoteUrl)
 
 const updateOnlineStatus = () => {
   isOnline.value = navigator.onLine
