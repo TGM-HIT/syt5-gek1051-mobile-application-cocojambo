@@ -565,18 +565,96 @@ Aktuell läuft die Synchronisation automatisch (`live: true`). Die Implementieru
 
 > Als Benutzer möchte ich die Möglichkeit haben, Barcodes der Produkte scannen zu können und die Nährwerte angezeigt zu bekommen.
 
-**Status:** Nicht implementiert
+**Status:** Implementiert
 
-**Geplante Technologien (laut TECHSTACK.md):**
+**Beteiligte Dateien:**
 
-- `html5-qrcode` für Barcode-Scanning
-- Open Food Facts API für Nährwertdaten
+- `frontend/src/views/BarcodeScanner.vue` — Scan-Komponente (Kamera, Produktsuche, Nährwertanzeige)
+- `frontend/src/views/ArticleListView.vue` — Einbindung und Weiterverarbeitung des Scan-Ergebnisses
 
-Die Implementierung würde erfordern:
+---
 
-- Eine Scan-Komponente mit `html5-qrcode`
-- API-Anbindung an Open Food Facts
-- Anzeige der Nährwerte (Kcal, Proteine, Fette, Kohlenhydrate)
+### Technischer Ablauf
+
+#### 1. Kamera-Scan
+
+`BarcodeScanner.vue` wird beim Mounten über `@zxing/browser` (Bibliothek für Barcode-Erkennung im Browser) initialisiert — ursprünglich war `html5-qrcode` geplant, umgesetzt wurde es mit der leistungsfähigeren `BrowserMultiFormatReader`-Klasse, die neben QR-Codes auch gängige 1D-Barcodes (EAN-13, EAN-8 u. a.) erkennt:
+
+```js
+reader = new BrowserMultiFormatReader()
+await reader.decodeFromVideoDevice(undefined, videoRef.value, async (result, err) => {
+  if (result && !didScan) {
+    didScan = true
+    BrowserMultiFormatReader.releaseAllStreams()
+    nutritionData.value = await lookupProduct(result.getText())
+  }
+})
+```
+
+Das `didScan`-Flag verhindert, dass ein erkannter Barcode mehrfach verarbeitet wird. Nach dem ersten Fund werden alle Kamera-Streams sofort freigegeben.
+
+Als Fallback kann der Barcode auch manuell über ein Textfeld eingegeben werden, falls die Kamera nicht verfügbar ist oder der Scan fehlschlägt.
+
+#### 2. Produktsuche via Open Food Facts
+
+Die Funktion `lookupProduct(barcode)` ruft die öffentliche Open Food Facts API ab:
+
+```
+GET https://world.openfoodfacts.org/api/v0/product/{barcode}.json
+```
+
+Bei Erfolg (`status === 1`) werden Produktname und Nährwerte extrahiert. Der deutsche Produktname (`product_name_de`) wird bevorzugt, fällt dieser weg, wird auf den allgemeinen Namen zurückgegriffen. Ist das Produkt nicht in der Datenbank, wird der Barcode-String selbst als Produktname verwendet.
+
+Folgende Nährwerte pro 100 g werden ausgelesen, sofern vorhanden:
+
+| Feld                        | Einheit |
+| --------------------------- | ------- |
+| Energie                     | kcal    |
+| Fett                        | g       |
+| davon gesättigte Fettsäuren | g       |
+| Kohlenhydrate               | g       |
+| davon Zucker                | g       |
+| Ballaststoffe               | g       |
+| Eiweiß                      | g       |
+| Salz                        | g       |
+
+Felder mit dem Wert `null` werden aus der Anzeige herausgefiltert.
+
+#### 3. Nährwert-Anzeige und Preiseingabe
+
+Nach dem Scan wechselt die Komponente von der Kameraansicht zur Produktkarte. Diese zeigt den Produktnamen, die verfügbaren Nährwerte und ein optionales Preisfeld. Der Nutzer kann einen Preis ergänzen oder das Feld leer lassen.
+
+#### 4. Übergabe an die Artikelliste
+
+Beim Bestätigen emittiert `BarcodeScanner.vue` das `scanned`-Event mit Name, Barcode und optionalem Preis:
+
+```js
+emit('scanned', {
+  name: nutritionData.value.name,
+  barcode: nutritionData.value.barcode,
+  price: scannedPrice.value ?? null,
+})
+```
+
+`ArticleListView.vue` fängt dieses Event in `onBarcodeScanned()` ab und befüllt damit das Artikel-Erstellen-Modal vor:
+
+```js
+function onBarcodeScanned({ name, barcode, price }) {
+  showScanner.value = false
+  newName.value = name
+  newBarcode.value = barcode || null
+  newPrice.value = price || null
+  newQuantity.value = 1
+  newUnit.value = ''
+  showModal.value = true
+}
+```
+
+Der Nutzer kann Name, Menge und weitere Felder noch anpassen, bevor der Artikel tatsächlich zur Liste hinzugefügt wird. Barcode und Preis werden im Artikel-Dokument gespeichert.
+
+#### 5. Ressourcenverwaltung
+
+`BrowserMultiFormatReader.releaseAllStreams()` wird sowohl nach erfolgreichem Scan, nach manueller Eingabe als auch beim Schließen der Komponente (`onUnmounted`) aufgerufen, um den Kamera-Stream zuverlässig freizugeben und Ressourcenlecks zu vermeiden.
 
 ---
 
