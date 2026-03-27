@@ -284,6 +284,28 @@ Damit die Synchronisation zwischen verschiedenen Geräten funktioniert, sind zwe
 
 ---
 
+## User Story 34 — Einkaufsliste manuell löschen
+
+> Als Benutzer möchte ich eine Einkaufsliste komplett löschen können (unabhängig davon, ob ich sie verlasse).
+
+**Status:** Implementiert
+
+**Beteiligte Dateien:**
+
+- `frontend/src/views/HomeView.vue` — UI mit Löschen-Button und Bestätigungs-Modal
+- `frontend/src/stores/shoppingList.js` — `deleteList()`-Logik
+
+**Technischer Ablauf:**
+
+1. Ein Klick auf "Liste löschen" öffnet ein Modal zur Bestätigung.
+2. Der Benutzer bestätigt den Löschvorgang.
+3. `deleteList(id, rev)` entfernt das Dokument permanent via `db.remove(id, rev)`.
+4. Anschließend wird `loadLists()` aufgerufen, um die Ansicht zu aktualisieren.
+
+*Hinweis: Dies unterscheidet sich von "Liste verlassen" (Story 8), welche bei geteilten Listen lediglich das Entfernen des eigenen Benutzers aus dem `members` Array veranlasst, außer die Liste hat keine weiteren Nutzer mehr.*
+
+---
+
 ## User Story 9 — Ausgeblendete Artikel wiederherstellen
 
 > Als Benutzer möchte ich ausgeblendete Artikel wieder in die Ursprungsliste hinzufügen können, falls Artikel doch benötigt werden.
