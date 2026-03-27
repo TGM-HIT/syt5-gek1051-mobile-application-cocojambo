@@ -418,6 +418,28 @@ Damit die Synchronisation zwischen verschiedenen Geräten funktioniert, sind zwe
 
 ---
 
+## User Story 34 — Einkaufsliste manuell löschen
+
+> Als Benutzer möchte ich eine Einkaufsliste komplett löschen können (unabhängig davon, ob ich sie verlasse).
+
+**Status:** Implementiert
+
+**Beteiligte Dateien:**
+
+- `frontend/src/views/HomeView.vue` — UI mit Löschen-Button und Bestätigungs-Modal
+- `frontend/src/stores/shoppingList.js` — `deleteList()`-Logik
+
+**Technischer Ablauf:**
+
+1. Ein Klick auf "Liste löschen" öffnet ein Modal zur Bestätigung.
+2. Der Benutzer bestätigt den Löschvorgang.
+3. `deleteList(id, rev)` entfernt das Dokument permanent via `db.remove(id, rev)`.
+4. Anschließend wird `loadLists()` aufgerufen, um die Ansicht zu aktualisieren.
+
+*Hinweis: Dies unterscheidet sich von "Liste verlassen" (Story 8), welche bei geteilten Listen lediglich das Entfernen des eigenen Benutzers aus dem `members` Array veranlasst, außer die Liste hat keine weiteren Nutzer mehr.*
+
+---
+
 ## User Story 9 — Ausgeblendete Artikel wiederherstellen
 
 > Als Benutzer möchte ich ausgeblendete Artikel wieder in die Ursprungsliste hinzufügen können, falls Artikel doch benötigt werden.
@@ -538,13 +560,24 @@ Diese Funktion ist noch nicht umgesetzt. Die Implementierung würde erfordern:
 
 > Als Benutzer möchte ich die Möglichkeit haben, meine Listen als CSV-Dateien zu exportieren.
 
-**Status:** Nicht implementiert
+**Status:** Implementiert
 
-Diese Funktion ist noch nicht umgesetzt. Die Implementierung würde erfordern:
+**Beteiligte Dateien:**
 
-- Eine Funktion zum Formatieren der Listendaten als CSV
-- Einen Download-Button in der UI
-- Einen Datei-Download via `Blob` und `URL.createObjectURL()`
+- `frontend/src/views/ArticleListView.vue` — `exportToCsv()`-Logik und Export-Button
+
+**Technischer Ablauf:**
+
+1. Der Benutzer klickt auf den "CSV"-Button in der Aktionsleiste einer Einkaufsliste.
+2. `exportToCsv()` liest alle aktiven **und** ausgeblendeten Artikel aus den Pinia Stores.
+3. Die Felder (Name, Menge, Einheit, Notiz, Erledigt) werden mit `escapeCsvField()` sauber formatiert — Komma und Anführungszeichen im Text werden korrekt escaped.
+4. Ein UTF-8 BOM-Prefix (`\uFEFF`) wird vorangestellt, damit Excel die Datei korrekt als UTF-8 erkennt.
+5. Ein temporärer Download-Link wird erzeugt und im Browser sofort geklickt. Die Datei wird als `<Listenname>_export.csv` heruntergeladen.
+
+**CSV-Spalten:**
+
+| Name | Menge | Einheit | Notiz | Erledigt |
+|------|-------|---------|-------|----------|
 
 ---
 

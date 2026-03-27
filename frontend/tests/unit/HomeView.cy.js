@@ -113,6 +113,29 @@ describe('HomeView', () => {
     cy.wrap(store.deleteList).should('have.been.calledWith', mockLists[0]._id, mockLists[0]._rev)
   })
 
+  it('does not call deleteList when canceled', () => {
+    store.lists = [mockLists[0]]
+    cy.get('button[title="Liste löschen"]').click()
+    cy.contains('h2', 'Liste löschen?').should('be.visible')
+    cy.contains('button', 'Abbrechen').click()
+    cy.wrap(store.deleteList).should('not.have.been.called')
+    cy.contains('h2', 'Liste löschen?').should('not.exist')
+  })
+
+  it('shows the correct list name in the delete modal', () => {
+    store.lists = [mockLists[0]]
+    cy.get('button[title="Liste löschen"]').click()
+    // The name is rendered inside its own <span> with typographic quotes
+    cy.contains('span', '„Wocheneinkauf"').should('be.visible')
+  })
+
+  it('closes delete modal after successful deletion', () => {
+    store.lists = [mockLists[0]]
+    cy.get('button[title="Liste löschen"]').click()
+    cy.contains('button', 'Löschen').click()
+    cy.contains('h2', 'Liste löschen?').should('not.exist')
+  })
+
   it('shows the join button', () => {
     cy.contains('Liste beitreten').should('be.visible')
   })
