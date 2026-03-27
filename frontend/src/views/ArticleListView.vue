@@ -7,7 +7,7 @@ import { useThemeStore } from '../stores/theme.js'
 import BarcodeScanner from './BarcodeScanner.vue'
 import PriceTagScanner from './PriceTagScanner.vue'
 import ManualSyncButton from '../components/sync/ManualSyncButton.vue'
-import SyncHistoryLogs from '../components/sync/SyncHistoryLogs.vue'
+import SyncToast from '../components/sync/SyncToast.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -478,10 +478,10 @@ async function onPriceScanned(newPrice) {
         </div>
       </div>
       
-      <!-- Display subtle sync history metrics at the bottom of the list -->
-      <SyncHistoryLogs class="mt-8 mb-6" />
-      
     </main>
+
+    <!-- Global Sync Toast Overlay -->
+    <SyncToast />
 
     <!-- Total footer -->
     <div
