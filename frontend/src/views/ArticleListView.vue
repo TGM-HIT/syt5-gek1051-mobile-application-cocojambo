@@ -119,24 +119,21 @@ function closeEditModal() {
 async function submitEdit() {
   if (!editName.value.trim() || !editingArticle.value) return
   submitting.value = true
+  const article = editingArticle.value
   const newPrice = editPrice.value ?? null
-  // Track price change in history if price differs
-  if (newPrice !== editingArticle.value.price && newPrice != null) {
-    await articleStore.updatePrice(listId, editingArticle.value, newPrice)
-    // Reload the article with updated _rev before saving other fields
-    await articleStore.loadArticles(listId)
-    const updated = articleStore.articles.find((a) => a._id === editingArticle.value._id)
-      || articleStore.hiddenArticles.find((a) => a._id === editingArticle.value._id)
-    if (updated) editingArticle.value = updated
+
+  if (newPrice !== article.price && newPrice != null) {
+    await articleStore.updatePrice(listId, article._id, article.price, newPrice)
   }
-  await articleStore.updateArticle(listId, {
-    ...editingArticle.value,
-    name: editName.value.trim(),
-    quantity: editQuantity.value,
-    unit: editUnit.value.trim(),
-    note: editNote.value.trim(),
-    price: newPrice,
-  })
+
+  const changedFields = {}
+  if (editName.value.trim() !== article.name) changedFields.name = editName.value.trim()
+  if (editQuantity.value !== article.quantity) changedFields.quantity = editQuantity.value
+  if (editUnit.value.trim() !== (article.unit || '')) changedFields.unit = editUnit.value.trim()
+  if (editNote.value.trim() !== (article.note || '')) changedFields.note = editNote.value.trim()
+  if (newPrice !== article.price && newPrice == null) changedFields.price = null
+
+  await articleStore.updateArticle(listId, article._id, changedFields)
   submitting.value = false
   closeEditModal()
 }
@@ -192,7 +189,7 @@ function openPriceScanner(article) {
 async function onPriceScanned(newPrice) {
   showPriceScanner.value = false
   if (priceScanArticle.value && newPrice != null) {
-    await articleStore.updatePrice(listId, priceScanArticle.value, newPrice)
+    await articleStore.updatePrice(listId, priceScanArticle.value._id, priceScanArticle.value.price, newPrice)
   }
   priceScanArticle.value = null
 }
