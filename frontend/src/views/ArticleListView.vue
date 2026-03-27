@@ -152,6 +152,20 @@ function togglePriceHistory(articleId) {
   expandedPriceId.value = expandedPriceId.value === articleId ? null : articleId
 }
 
+function displayName(username) {
+  return username ? username.split('#')[0] : 'Unbekannt'
+}
+
+function formatCheckTime(isoString) {
+  const date = new Date(isoString)
+  return (
+    date.toLocaleDateString('de-AT') +
+    ' um ' +
+    date.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' }) +
+    ' Uhr'
+  )
+}
+
 function priceTrend(article) {
   if (!article.priceHistory || article.priceHistory.length < 2) return null
   const prev = article.priceHistory[article.priceHistory.length - 2].price
@@ -399,6 +413,19 @@ async function onPriceScanned(newPrice) {
             >
               <p v-for="(entry, idx) in article.priceHistory" :key="idx">
                 {{ new Date(entry.setAt).toLocaleDateString('de-AT') }}: {{ formatPrice(entry.price) }}
+              </p>
+            </div>
+            <!-- Check events -->
+            <div
+              v-if="articleStore.checkEvents[article._id]?.length"
+              class="mt-1 space-y-0.5"
+            >
+              <p
+                v-for="event in articleStore.checkEvents[article._id]"
+                :key="event._id"
+                class="text-xs text-gray-400 dark:text-gray-500"
+              >
+                ✓ {{ displayName(event.checkedBy) }}, {{ formatCheckTime(event.checkedAt) }}
               </p>
             </div>
           </div>

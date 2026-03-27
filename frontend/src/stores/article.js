@@ -5,6 +5,7 @@ export const useArticleStore = defineStore('article', {
   state: () => ({
     articles: [],
     hiddenArticles: [],
+    checkEvents: {},
     searchResults: { inCurrentList: [], inOtherLists: [], inPast: [] },
     _unsubscribe: null,
     _currentListId: null,
@@ -15,7 +16,7 @@ export const useArticleStore = defineStore('article', {
       this.stopLiveSync()
       this._currentListId = listId
       this._unsubscribe = onDbChange((change) => {
-        if (change.doc && (change.doc.type === 'article' || change.deleted)) {
+        if (change.doc && (change.doc.type === 'article' || change.doc.type === 'check-event' || change.deleted)) {
           this.loadArticles(this._currentListId)
         }
       })
@@ -31,12 +32,23 @@ export const useArticleStore = defineStore('article', {
 
     async loadArticles(listId) {
       const result = await db.allDocs({ include_docs: true })
-      const all = result.rows
-        .map((row) => row.doc)
+      const all = result.rows.map((row) => row.doc)
+
+      const articleDocs = all
         .filter((doc) => doc.type === 'article' && doc.listId === listId)
         .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-      this.articles = all.filter((doc) => !doc.hidden)
-      this.hiddenArticles = all.filter((doc) => doc.hidden)
+      this.articles = articleDocs.filter((doc) => !doc.hidden)
+      this.hiddenArticles = articleDocs.filter((doc) => doc.hidden)
+
+      const eventsByArticle = {}
+      all
+        .filter((doc) => doc.type === 'check-event' && doc.listId === listId)
+        .sort((a, b) => new Date(a.checkedAt) - new Date(b.checkedAt))
+        .forEach((event) => {
+          if (!eventsByArticle[event.articleId]) eventsByArticle[event.articleId] = []
+          eventsByArticle[event.articleId].push(event)
+        })
+      this.checkEvents = eventsByArticle
     },
 
     async createArticle(listId, { name, quantity, unit, note, price, barcode } = {}) {
@@ -65,7 +77,18 @@ export const useArticleStore = defineStore('article', {
     },
 
     async toggleChecked(listId, article) {
-      await db.put({ ...article, checked: !article.checked })
+      const newChecked = !article.checked
+      await db.put({ ...article, checked: newChecked })
+      if (newChecked) {
+        await db.put({
+          _id: `check-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          type: 'check-event',
+          articleId: article._id,
+          listId,
+          checkedBy: getUsername(),
+          checkedAt: new Date().toISOString(),
+        })
+      }
       await this.loadArticles(listId)
     },
 
