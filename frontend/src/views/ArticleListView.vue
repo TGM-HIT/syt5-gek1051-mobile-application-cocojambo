@@ -121,24 +121,23 @@ function closeEditModal() {
 async function submitEdit() {
   if (!editName.value.trim() || !editingArticle.value) return
   submitting.value = true
+  const article = editingArticle.value
   const newPrice = editPrice.value ?? null
-  // Track price change in history if price differs
-  if (newPrice !== editingArticle.value.price && newPrice != null) {
-    await articleStore.updatePrice(listId, editingArticle.value, newPrice)
-    // Reload the article with updated _rev before saving other fields
-    await articleStore.loadArticles(listId)
-    const updated = articleStore.articles.find((a) => a._id === editingArticle.value._id)
-      || articleStore.hiddenArticles.find((a) => a._id === editingArticle.value._id)
-    if (updated) editingArticle.value = updated
+
+  if (newPrice !== article.price && newPrice != null) {
+    await articleStore.updatePrice(listId, article._id, article.price, newPrice)
   }
-  await articleStore.updateArticle(listId, {
-    ...editingArticle.value,
-    name: editName.value.trim(),
-    quantity: editQuantity.value,
-    unit: editUnit.value.trim(),
-    note: editNote.value.trim(),
-    price: newPrice,
-  })
+
+  const changedFields = {}
+  if (editName.value.trim() !== article.name) changedFields.name = editName.value.trim()
+  if (editQuantity.value !== article.quantity || editUnit.value.trim() !== (article.unit || '')) {
+    changedFields.quantity = editQuantity.value
+    changedFields.unit = editUnit.value.trim()
+  }
+  if (editNote.value.trim() !== (article.note || '')) changedFields.note = editNote.value.trim()
+  if (newPrice !== article.price && newPrice == null) changedFields.price = null
+
+  await articleStore.updateArticle(listId, article._id, changedFields)
   submitting.value = false
   closeEditModal()
 }
@@ -195,6 +194,20 @@ function togglePriceHistory(articleId) {
   expandedPriceId.value = expandedPriceId.value === articleId ? null : articleId
 }
 
+function displayName(username) {
+  return username ? username.split('#')[0] : 'Unbekannt'
+}
+
+function formatCheckTime(isoString) {
+  const date = new Date(isoString)
+  return (
+    date.toLocaleDateString('de-AT') +
+    ' um ' +
+    date.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' }) +
+    ' Uhr'
+  )
+}
+
 function priceTrend(article) {
   if (!article.priceHistory || article.priceHistory.length < 2) return null
   const prev = article.priceHistory[article.priceHistory.length - 2].price
@@ -221,7 +234,7 @@ function openPriceScanner(article) {
 async function onPriceScanned(newPrice) {
   showPriceScanner.value = false
   if (priceScanArticle.value && newPrice != null) {
-    await articleStore.updatePrice(listId, priceScanArticle.value, newPrice)
+    await articleStore.updatePrice(listId, priceScanArticle.value._id, priceScanArticle.value.price, newPrice)
   }
   priceScanArticle.value = null
 }
@@ -452,6 +465,19 @@ async function onPriceScanned(newPrice) {
             >
               <p v-for="(entry, idx) in article.priceHistory" :key="idx">
                 {{ new Date(entry.setAt).toLocaleDateString('de-AT') }}: {{ formatPrice(entry.price) }}
+              </p>
+            </div>
+            <!-- Check events -->
+            <div
+              v-if="articleStore.checkEvents[article._id]?.length"
+              class="mt-1 space-y-0.5"
+            >
+              <p
+                v-for="event in articleStore.checkEvents[article._id]"
+                :key="event._id"
+                class="text-xs text-gray-400 dark:text-gray-500"
+              >
+                ✓ {{ displayName(event.checkedBy) }}, {{ formatCheckTime(event.checkedAt) }}
               </p>
             </div>
           </div>

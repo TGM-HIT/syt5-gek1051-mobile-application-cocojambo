@@ -53,40 +53,18 @@ describe('ArticleStore – Notiz Store-Methoden', () => {
   })
 
   it('updateArticle speichert die geänderte Notiz korrekt', () => {
-    const article = {
-      _id: 'a1',
-      _rev: '1-abc',
-      type: 'article',
-      listId: 'list-1',
-      name: 'Milch',
-      quantity: 2,
-      unit: 'l',
-      note: 'alte Notiz',
-      checked: false,
-    }
     cy.window().then(async (win) => {
-      await store.updateArticle('list-1', { ...article, note: 'neue Notiz' })
+      await store.updateArticle('list-1', 'a1', { note: 'neue Notiz' })
       const [doc] = win.__db.put.args[0]
-      expect(doc.note).to.equal('neue Notiz')
+      expect(doc.fields.note).to.equal('neue Notiz')
     })
   })
 
   it('updateArticle kann Notiz auf leeren String setzen', () => {
-    const article = {
-      _id: 'a1',
-      _rev: '1-abc',
-      type: 'article',
-      listId: 'list-1',
-      name: 'Milch',
-      quantity: 2,
-      unit: 'l',
-      note: 'wird gelöscht',
-      checked: false,
-    }
     cy.window().then(async (win) => {
-      await store.updateArticle('list-1', { ...article, note: '' })
+      await store.updateArticle('list-1', 'a1', { note: '' })
       const [doc] = win.__db.put.args[0]
-      expect(doc.note).to.equal('')
+      expect(doc.fields.note).to.equal('')
     })
   })
 
@@ -142,48 +120,43 @@ describe('ArticleStore – Preis-Funktionen', () => {
   })
 
   it('updatePrice adds history entry when price changes', () => {
-    const article = {
-      _id: 'a1', _rev: '1-abc', type: 'article', listId: 'list-1',
-      name: 'Milch', quantity: 2, unit: 'l', note: '', checked: false,
-      price: 1.29, barcode: null, priceHistory: [],
-    }
     cy.window().then(async (win) => {
-      await store.updatePrice('list-1', article, 1.49)
+      await store.updatePrice('list-1', 'a1', 1.29, 1.49)
       const [doc] = win.__db.put.args[0]
-      expect(doc.price).to.equal(1.49)
-      expect(doc.priceHistory).to.have.length(1)
-      expect(doc.priceHistory[0].price).to.equal(1.49)
-      expect(doc.priceHistory[0]).to.have.property('setAt')
+      expect(doc.fields.price).to.equal(1.49)
+      expect(doc.priceHistoryEntry.price).to.equal(1.49)
+      expect(doc.priceHistoryEntry).to.have.property('setAt')
     })
   })
 
   it('updatePrice does nothing when price is the same', () => {
-    const article = {
-      _id: 'a1', _rev: '1-abc', type: 'article', listId: 'list-1',
-      name: 'Milch', quantity: 2, unit: 'l', note: '', checked: false,
-      price: 1.49, barcode: null, priceHistory: [],
-    }
     cy.window().then(async (win) => {
-      await store.updatePrice('list-1', article, 1.49)
+      await store.updatePrice('list-1', 'a1', 1.49, 1.49)
       expect(win.__db.put).to.not.have.been.called
     })
   })
 
-  it('updatePrice caps priceHistory at 20 entries', () => {
-    const history = Array.from({ length: 20 }, (_, i) => ({
-      price: 1.0 + i * 0.01,
-      setAt: `2026-01-${String(i + 1).padStart(2, '0')}T00:00:00.000Z`,
-    }))
-    const article = {
-      _id: 'a1', _rev: '1-abc', type: 'article', listId: 'list-1',
-      name: 'Milch', quantity: 2, unit: 'l', note: '', checked: false,
-      price: 1.20, barcode: null, priceHistory: history,
+  it('loadArticles caps priceHistory at 20 entries when many patches exist', () => {
+    const baseArticle = {
+      _id: 'a1', type: 'article', listId: 'list-1',
+      name: 'Milch', quantity: 2, unit: 'l', note: '', checked: false, hidden: false,
+      price: 1.0, barcode: null, priceHistory: [],
+      createdBy: 'test', createdAt: '2026-01-01T00:00:00.000Z',
     }
+    const patches = Array.from({ length: 21 }, (_, i) => ({
+      _id: `patch-a1-${i}`,
+      type: 'article-patch',
+      articleId: 'a1',
+      listId: 'list-1',
+      fields: { price: i + 1 },
+      priceHistoryEntry: { price: i + 1, setAt: `2026-01-${String(i + 1).padStart(2, '0')}T00:00:00.000Z` },
+      editedAt: `2026-01-${String(i + 1).padStart(2, '0')}T00:00:00.000Z`,
+    }))
     cy.window().then(async (win) => {
-      await store.updatePrice('list-1', article, 2.99)
-      const [doc] = win.__db.put.args[0]
-      expect(doc.priceHistory).to.have.length(20)
-      expect(doc.priceHistory[19].price).to.equal(2.99)
+      win.__db.allDocs.resolves(makeAllDocsResult([baseArticle, ...patches]))
+      await store.loadArticles('list-1')
+      expect(store.articles[0].priceHistory).to.have.length(20)
+      expect(store.articles[0].priceHistory[19].price).to.equal(21)
     })
   })
 })
