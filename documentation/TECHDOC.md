@@ -585,12 +585,41 @@ Diese Funktion ist noch nicht umgesetzt. Die Implementierung würde erfordern:
 
 > Als Benutzer möchte ich einen Button haben, der meine Listen aktualisiert, um eine manuelle Option für die Synchronisation zu haben.
 
-**Status:** Nicht implementiert
+**Status:** Implementiert
 
-Aktuell läuft die Synchronisation automatisch (`live: true`). Die Implementierung würde erfordern:
+**Beteiligte Dateien:**
 
-- Eine Store-Methode, die manuell `db.sync()` auslöst
-- Einen Button in der UI mit Statusanzeige (synchronisiert/fehlgeschlagen)
+- `frontend/src/components/sync/ManualSyncButton.vue` — Icon-Button mit Progress-Bar
+- `frontend/src/components/sync/SyncToast.vue` — Toast-Benachrichtigung mit Ergebnis
+- `frontend/src/services/ManualSyncService.js` — Sync-Logik mit Callbacks
+- `frontend/src/stores/manualSyncStore.js` — reaktiver State (Fortschritt, Logs)
+
+**Technischer Ablauf:**
+
+1. Der Benutzer klickt auf den Sync-Icon-Button in der Aktionsleiste einer Liste.
+2. Der Button prüft `navigator.onLine` – ist das Gerät offline, bleibt er deaktiviert.
+3. `syncStore.startSync()` wird aufgerufen: `isSyncing = true`, `syncProgress = 10`.
+4. `ManualSyncService.executeManualSync()` startet eine einmalige (`live: false, retry: false`) bidirektionale PouchDB-Synchronisation.
+5. Während der Replikation feuert das `change`-Event. Der Store erhöht `syncProgress` schrittweise bis maximal 90%.
+6. Bei Abschluss (`complete`) wird `syncStore.finishSync()` aufgerufen: `syncProgress = 100`, der Sync-Eintrag wird dem Audit-Log (`syncLogs[]`) vorangestellt.
+7. Bei einem Fehler (`error`/`denied`) wird `syncStore.failSync()` aufgerufen: `syncProgress = 0`, Fehlermeldung wird im Log gespeichert.
+8. Eine `SyncToast`-Komponente beobachtet den Store reaktiv und zeigt nach Abschluss für 6 Sekunden unten rechts eine Benachrichtigung an (Erfolg oder Fehler).
+
+**Architektur-Details:**
+
+| Komponente | Verantwortlichkeit |
+|---|---|
+| `ManualSyncButton.vue` | Trigger, Online/Offline-State, visueller Fortschrittsbalken |
+| `ManualSyncService.js` | PouchDB-Replikation, Event-Callbacks (`onProgress`, `onComplete`, `onError`) |
+| `manualSyncStore.js` | Reaktiver Zustand, Audit-History (`syncLogs[]`) |
+| `SyncToast.vue` | User-Feedback nach Abschluss (Auto-hide nach 6s) |
+
+**Unterschied zu automatischem Sync:**
+
+Der manuelle Sync unterscheidet sich vom automatischen Hintergrund-Sync (`db.sync({ live: true, retry: true })`) in `db/index.js` dadurch, dass er:
+- Einmalig ausgeführt wird (kein Retry, kein Live-Polling)
+- Sofortiges visuelles Feedback via Fortschrittsbalken liefert
+- Den Benutzer über Ergebnis und Fehler explizit informiert
 
 ---
 
