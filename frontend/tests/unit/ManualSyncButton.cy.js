@@ -64,8 +64,9 @@ describe('ManualSyncButton – Syncing State', () => {
     syncStore.isSyncing = true
     cy.mount(ManualSyncButton)
     cy.get('svg.animate-spin').should('exist')
-    // The plain refresh icon should be gone
-    cy.get('svg').not('.animate-spin').should('not.exist')
+    // Exactly 1 SVG in the button: the spinner. The v-else icon must be gone.
+    cy.get('button svg').should('have.length', 1)
+    cy.get('button svg').should('have.class', 'animate-spin')
   })
 
   it('zeigt den Fortschrittsbalken wenn isSyncing true ist', () => {
@@ -80,7 +81,8 @@ describe('ManualSyncButton – Syncing State', () => {
     cy.stub(window.navigator, 'onLine').value(true)
     syncStore.isSyncing = false
     cy.mount(ManualSyncButton)
-    cy.get('[style*="width:"]').should('not.exist')
+    // The progress bar has class bg-green-500 and is only rendered via v-if when syncing
+    cy.get('.bg-green-500').should('not.exist')
   })
 
   it('zeigt das Refresh-Icon wenn nicht syncing', () => {
