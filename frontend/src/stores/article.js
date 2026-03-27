@@ -78,9 +78,13 @@ export const useArticleStore = defineStore('article', {
         .filter((doc) => doc.type === 'check-event' && doc.listId === listId)
         .sort((a, b) => new Date(a.checkedAt) - new Date(b.checkedAt))
         .forEach((event) => {
-          if (!eventsByArticle[event.articleId]) eventsByArticle[event.articleId] = []
-          eventsByArticle[event.articleId].push(event)
+          if (!eventsByArticle[event.articleId]) eventsByArticle[event.articleId] = {}
+          eventsByArticle[event.articleId][event.checkedBy] = event
         })
+      for (const articleId of Object.keys(eventsByArticle)) {
+        eventsByArticle[articleId] = Object.values(eventsByArticle[articleId])
+          .sort((a, b) => new Date(a.checkedAt) - new Date(b.checkedAt))
+      }
       this.checkEvents = eventsByArticle
     },
 
