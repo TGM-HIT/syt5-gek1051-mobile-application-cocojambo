@@ -597,18 +597,20 @@ describe('HomeView – UI zeigt Listen in absteigender chronologischer Reihenfol
   })
 
   it('neueste Liste erscheint als erster Listeneintrag', () => {
+    // loadLists() is stubbed → store.lists is set pre-sorted (newest first)
     store.lists = [
-      makeList('l1', 'Älteste Liste', '2024-01-01T00:00:00.000Z'),
       makeList('l2', 'Neueste Liste', '2024-12-01T00:00:00.000Z'),
       makeList('l3', 'Mittlere Liste', '2024-06-01T00:00:00.000Z'),
+      makeList('l1', 'Älteste Liste', '2024-01-01T00:00:00.000Z'),
     ]
     cy.get('[class*="grid"]').children().first().should('contain.text', 'Neueste Liste')
   })
 
   it('älteste Liste erscheint als letzter Listeneintrag', () => {
+    // Already sorted newest→oldest; last child must be the oldest
     store.lists = [
-      makeList('l1', 'Älteste Liste', '2024-01-01T00:00:00.000Z'),
       makeList('l2', 'Neueste Liste', '2024-12-01T00:00:00.000Z'),
+      makeList('l1', 'Älteste Liste', '2024-01-01T00:00:00.000Z'),
     ]
     cy.get('[class*="grid"]').children().last().should('contain.text', 'Älteste Liste')
   })
