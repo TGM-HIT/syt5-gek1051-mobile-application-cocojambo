@@ -88,7 +88,7 @@ export const useArticleStore = defineStore('article', {
       this.checkEvents = eventsByArticle
     },
 
-    async createArticle(listId, { name, quantity, unit, note, price, barcode } = {}) {
+    async createArticle(listId, { name, quantity, unit, note, price, barcode, rabattfähig } = {}) {
       await db.put({
         _id: Date.now().toString(),
         type: 'article',
@@ -102,6 +102,7 @@ export const useArticleStore = defineStore('article', {
         priceHistory: [],
         checked: false,
         hidden: false,
+        rabattfähig: rabattfähig ?? false,
         createdBy: getUsername(),
         createdAt: new Date().toISOString(),
       })

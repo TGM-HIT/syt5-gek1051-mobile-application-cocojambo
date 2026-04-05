@@ -43,6 +43,7 @@ const newUnit = ref('')
 const newNote = ref('')
 const newPrice = ref(null)
 const newBarcode = ref(null)
+const newRabattfähig = ref(false)
 
 const editingArticle = ref(null)
 const editName = ref('')
@@ -50,6 +51,7 @@ const editQuantity = ref(1)
 const editUnit = ref('')
 const editNote = ref('')
 const editPrice = ref(null)
+const editRabattfähig = ref(false)
 
 onMounted(async () => {
   await listStore.loadLists()
@@ -71,6 +73,7 @@ function openModal() {
   newNote.value = ''
   newPrice.value = null
   newBarcode.value = null
+  newRabattfähig.value = false
   showModal.value = true
 }
 
@@ -98,6 +101,7 @@ async function submitCreate() {
     note: newNote.value.trim(),
     price: newPrice.value ?? null,
     barcode: newBarcode.value ?? null,
+    rabattfähig: newRabattfähig.value,
   })
   submitting.value = false
   closeModal()
@@ -110,6 +114,7 @@ function openEditModal(article) {
   editUnit.value = article.unit || ''
   editNote.value = article.note || ''
   editPrice.value = article.price
+  editRabattfähig.value = article.rabattfähig ?? false
   showEditModal.value = true
 }
 
@@ -136,6 +141,7 @@ async function submitEdit() {
   }
   if (editNote.value.trim() !== (article.note || '')) changedFields.note = editNote.value.trim()
   if (newPrice !== article.price && newPrice == null) changedFields.price = null
+  if (editRabattfähig.value !== (article.rabattfähig ?? false)) changedFields.rabattfähig = editRabattfähig.value
 
   await articleStore.updateArticle(listId, article._id, changedFields)
   submitting.value = false
@@ -424,8 +430,12 @@ async function onPriceScanned(newPrice) {
         <div
           v-for="article in articleStore.articles"
           :key="article._id"
-          class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-4"
-          :class="{ 'opacity-60': article.checked }"
+          class="rounded-xl shadow-sm border p-4 flex items-center gap-4"
+          :class="{
+            'opacity-60': article.checked,
+            'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600': article.rabattfähig,
+            'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700': !article.rabattfähig,
+          }"
         >
           <!-- Checkbox -->
           <input
@@ -630,6 +640,15 @@ async function onPriceScanned(newPrice) {
               class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          <div class="flex items-center gap-2">
+            <input
+              v-model="newRabattfähig"
+              type="checkbox"
+              id="new-rabattfähig"
+              class="w-4 h-4 accent-yellow-500 cursor-pointer"
+            />
+            <label for="new-rabattfähig" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">Rabattfähig</label>
+          </div>
           <div class="flex gap-3 pt-4">
             <button
               type="button"
@@ -745,6 +764,15 @@ async function onPriceScanned(newPrice) {
               placeholder="z.B. Bio-Qualität"
               class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+          <div class="flex items-center gap-2">
+            <input
+              v-model="editRabattfähig"
+              type="checkbox"
+              id="edit-rabattfähig"
+              class="w-4 h-4 accent-yellow-500 cursor-pointer"
+            />
+            <label for="edit-rabattfähig" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">Rabattfähig</label>
           </div>
           <div class="flex gap-3 pt-4">
             <button
