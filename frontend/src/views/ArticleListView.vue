@@ -444,6 +444,13 @@ async function onPriceScanned(newPrice) {
           >
             🏷 Rabatt Pickerl kann verwendet werden
           </span>
+          <!-- No-price warning for rabattfähig articles -->
+          <span
+            v-if="article.rabattfähig && article.price == null"
+            class="absolute top-1.5 left-2 text-xs font-medium text-orange-700 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/50 rounded-full px-2 py-0.5 leading-tight"
+          >
+            ⚠ Kein Preis – Sortierung ungenau
+          </span>
           <!-- Checkbox -->
           <input
             type="checkbox"
