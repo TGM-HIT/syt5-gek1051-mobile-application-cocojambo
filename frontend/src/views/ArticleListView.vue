@@ -430,13 +430,20 @@ async function onPriceScanned(newPrice) {
         <div
           v-for="article in articleStore.articles"
           :key="article._id"
-          class="rounded-xl shadow-sm border p-4 flex items-center gap-4"
+          class="relative rounded-xl shadow-sm border p-4 flex items-center gap-4"
           :class="{
             'opacity-60': article.checked,
-            'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600': article.rabattfähig,
+            'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600 pt-8': article.rabattfähig,
             'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700': !article.rabattfähig,
           }"
         >
+          <!-- Rabatt badge -->
+          <span
+            v-if="article.rabattfähig"
+            class="absolute top-1.5 right-2 text-xs font-medium text-yellow-700 dark:text-yellow-400 bg-yellow-200 dark:bg-yellow-800/60 rounded-full px-2 py-0.5 leading-tight"
+          >
+            🏷 Rabatt Pickerl kann verwendet werden
+          </span>
           <!-- Checkbox -->
           <input
             type="checkbox"
