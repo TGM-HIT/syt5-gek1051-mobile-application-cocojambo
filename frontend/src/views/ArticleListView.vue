@@ -247,6 +247,13 @@ async function onPriceScanned(newPrice) {
 
 const showPickerlModal = ref(false)
 const pickerlProzent = ref(null)
+const pickerlAppliedIds = ref(new Set())
+
+function openPickerlModal() {
+  pickerlProzent.value = null
+  pickerlAppliedIds.value = new Set()
+  showPickerlModal.value = true
+}
 
 const pickerlArtikel = computed(() => {
   if (!pickerlProzent.value || pickerlProzent.value <= 0 || pickerlProzent.value > 100) return []
@@ -258,6 +265,14 @@ const pickerlArtikel = computed(() => {
       return { ...a, originalTotal, discountedTotal }
     })
 })
+
+async function applyPickerl(a) {
+  const prozent = pickerlProzent.value
+  const discountedPreis = parseFloat((a.price * (1 - prozent / 100)).toFixed(2))
+  await articleStore.updatePrice(listId, a._id, a.price, discountedPreis)
+  await articleStore.updateArticle(listId, a._id, { rabattAngewendet: { prozent, originalPreis: a.price } })
+  pickerlAppliedIds.value = new Set([...pickerlAppliedIds.value, a._id])
+}
 
 </script>
 
@@ -326,7 +341,7 @@ const pickerlArtikel = computed(() => {
             CSV
           </button>
           <button
-            @click="showPickerlModal = true; pickerlProzent = null"
+            @click="openPickerlModal"
             class="border border-yellow-500 text-yellow-600 dark:text-yellow-400 dark:border-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 font-medium px-3 py-2 rounded-lg transition-colors"
             title="Rabatt Pickerl berechnen"
           >
@@ -505,6 +520,10 @@ const pickerlArtikel = computed(() => {
               </span>
               <span v-if="priceTrend(article) === 'up'" class="text-red-500 ml-1">↑</span>
               <span v-if="priceTrend(article) === 'down'" class="text-green-500 ml-1">↓</span>
+            </p>
+            <!-- Discount applied indicator -->
+            <p v-if="article.rabattAngewendet" class="text-xs text-green-600 dark:text-green-400 mt-0.5">
+              🏷 −{{ article.rabattAngewendet.prozent }}% Rabatt (war {{ formatPrice(article.rabattAngewendet.originalPreis) }})
             </p>
             <!-- Price history expandable -->
             <div
@@ -750,7 +769,10 @@ const pickerlArtikel = computed(() => {
           <div
             v-for="a in pickerlArtikel"
             :key="a._id"
-            class="flex items-center justify-between gap-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg px-3 py-2"
+            class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 border"
+            :class="pickerlAppliedIds.has(a._id)
+              ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 opacity-60'
+              : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700'"
           >
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ a.name }}</p>
@@ -758,9 +780,19 @@ const pickerlArtikel = computed(() => {
                 {{ a.quantity }}{{ a.unit ? ' ' + a.unit : '' }} · ursprünglich {{ formatPrice(a.originalTotal) }}
               </p>
             </div>
-            <div class="text-right flex-shrink-0">
-              <p class="text-sm font-bold text-green-700 dark:text-green-400">{{ formatPrice(a.discountedTotal) }}</p>
-              <p class="text-xs text-gray-400 line-through">{{ formatPrice(a.originalTotal) }}</p>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="text-right">
+                <p class="text-sm font-bold text-green-700 dark:text-green-400">{{ formatPrice(a.discountedTotal) }}</p>
+                <p class="text-xs text-gray-400 line-through">{{ formatPrice(a.originalTotal) }}</p>
+              </div>
+              <button
+                v-if="!pickerlAppliedIds.has(a._id)"
+                @click="applyPickerl(a)"
+                class="text-xs font-medium bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg px-2 py-1 transition-colors flex-shrink-0"
+              >
+                Anwenden
+              </button>
+              <span v-else class="text-green-600 dark:text-green-400 text-sm flex-shrink-0">✓</span>
             </div>
           </div>
 
