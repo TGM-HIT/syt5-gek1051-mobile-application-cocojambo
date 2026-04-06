@@ -546,13 +546,95 @@ Diese Funktion ist noch nicht umgesetzt. Die Implementierung würde erfordern:
 
 > Als Benutzer möchte ich eine Ansicht haben, welche mir anzeigt auf welche Produkte es am sinnvollsten ist, Rabatt-Pickerl zu kleben.
 
-**Status:** Nicht implementiert
+**Status:** Implementiert
 
-Diese Funktion ist noch nicht umgesetzt. Die Implementierung würde erfordern:
+**Beteiligte Dateien:**
 
-- Preisfelder auf Artikeln
-- Berechnungslogik zur Optimierung (teuerste Artikel zuerst)
-- Eine eigene Ansicht/Komponente zur Darstellung
+- `frontend/src/views/ArticleListView.vue` — Pickerl-Button, Popup-Modal, Berechnungslogik und GUI-Anzeige
+
+---
+
+### Datenmodell
+
+Rabattrelevante Informationen werden direkt im Artikel-Dokument (PouchDB/CouchDB) gespeichert:
+
+```js
+{
+  rabattfähig: boolean,         // Artikel ist für Rabatt-Pickerl vorgemerkt
+  rabattAngewendet: {           // gesetzt, sobald ein Rabatt angewendet wurde
+    prozent: number,            // angewendeter Rabattprozentsatz
+    originalPreis: number       // Preis vor dem Rabatt (€ pro Einheit)
+  } | null
+}
+```
+
+`rabattAngewendet` wird über `articleStore.updateArticle()` als `article-patch`-Dokument persistiert und beim nächsten Laden mit den übrigen Patches zusammengeführt.
+
+---
+
+### Technischer Ablauf
+
+#### 1. Artikel als rabattfähig markieren
+
+Beim Erstellen oder Bearbeiten eines Artikels kann die Checkbox **„Rabattfähig"** gesetzt werden. Rabattfähige Artikel werden in der Listenansicht gelb hervorgehoben und nach oben sortiert (teuerste zuerst, da diese vom Rabatt am meisten profitieren).
+
+#### 2. Pickerl-Popup öffnen
+
+Ein **„🏷 Pickerl"**-Button im Header der Artikelliste öffnet das Popup. Beim Öffnen werden der Prozentwert und alle angewendeten Snapshots zurückgesetzt (`openPickerlModal()`).
+
+#### 3. Rabatt eingeben und Preise berechnen
+
+Der Benutzer gibt einen Prozentwert (1–100) ein. Die berechneten Preise werden über das Computed Property `pickerlArtikel` ermittelt:
+
+```js
+const pickerlArtikel = computed(() => {
+  return articleStore.articles
+    .filter((a) => a.rabattfähig && !a.checked && a.price != null && !pickerlAppliedIds.value.has(a._id))
+    .map((a) => {
+      const originalTotal = a.price * (a.quantity || 1)
+      const discountedTotal = originalTotal * (1 - pickerlProzent.value / 100)
+      return { ...a, originalTotal, discountedTotal }
+    })
+})
+```
+
+Gefiltert werden nur Artikel, die rabattfähig, nicht abgehakt und mit einem Preis versehen sind. Bereits angewendete Artikel werden ausgeblendet.
+
+#### 4. Rabatt auf einen Artikel anwenden (`applyPickerl`)
+
+Sobald der Benutzer bei einem Artikel auf **„Anwenden"** drückt:
+
+1. Der rabattierte Einzelpreis wird berechnet: `price * (1 - prozent / 100)`, gerundet auf 2 Dezimalstellen.
+2. Ein **Snapshot** der aktuellen Anzeigewerte (`originalTotal`, `discountedTotal`) wird sofort in `pickerlAppliedSnapshots` gespeichert — noch bevor der Store aktualisiert wird. Dadurch bleibt die Anzeige eingefroren und ein doppelter Rabatt wird verhindert.
+3. Die Artikel-ID wird zu `pickerlAppliedIds` hinzugefügt, sodass der Artikel aus `pickerlArtikel` verschwindet.
+4. Der neue Preis wird via `articleStore.updatePrice()` gespeichert (inklusive Eintrag in der Preishistorie).
+5. `rabattAngewendet` wird via `articleStore.updateArticle()` persistiert.
+
+Angewendete Artikel werden im Popup weiterhin angezeigt — grün eingefärbt, ausgegraut und mit einem **✓** versehen — basierend auf dem eingefrorenen Snapshot.
+
+#### 5. GUI-Anzeige in der Artikelliste
+
+Für Artikel mit gesetztem `rabattAngewendet` wird direkt unterhalb des Preises ein grüner Hinweis eingeblendet:
+
+```
+🏷 −20% Rabatt (war € 10,00)
+```
+
+Dieser zeigt den angewendeten Prozentsatz sowie den ursprünglichen Preis vor dem Rabatt.
+
+#### 6. Rabatt rückgängig machen (bei Bearbeitung)
+
+Wird ein Artikel bearbeitet und das Häkchen bei **„Rabattfähig"** entfernt, erkennt `submitEdit()` diesen Fall über die Variable `removingRabatt`:
+
+```js
+const removingRabatt = (article.rabattfähig ?? false) && !editRabattfähig.value && article.rabattAngewendet
+```
+
+In diesem Fall wird:
+
+- der **Originalpreis** aus `rabattAngewendet.originalPreis` via `updatePrice()` wiederhergestellt (mit Eintrag in der Preishistorie),
+- `rabattAngewendet` auf `null` gesetzt,
+- der grüne Hinweis in der GUI entfernt.
 
 ---
 
@@ -577,7 +659,7 @@ Diese Funktion ist noch nicht umgesetzt. Die Implementierung würde erfordern:
 **CSV-Spalten:**
 
 | Name | Menge | Einheit | Notiz | Erledigt |
-|------|-------|---------|-------|----------|
+| ---- | ----- | ------- | ----- | -------- |
 
 ---
 
@@ -607,16 +689,17 @@ Diese Funktion ist noch nicht umgesetzt. Die Implementierung würde erfordern:
 
 **Architektur-Details:**
 
-| Komponente | Verantwortlichkeit |
-|---|---|
-| `ManualSyncButton.vue` | Trigger, Online/Offline-State, visueller Fortschrittsbalken |
+| Komponente             | Verantwortlichkeit                                                           |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| `ManualSyncButton.vue` | Trigger, Online/Offline-State, visueller Fortschrittsbalken                  |
 | `ManualSyncService.js` | PouchDB-Replikation, Event-Callbacks (`onProgress`, `onComplete`, `onError`) |
-| `manualSyncStore.js` | Reaktiver Zustand, Audit-History (`syncLogs[]`) |
-| `SyncToast.vue` | User-Feedback nach Abschluss (Auto-hide nach 6s) |
+| `manualSyncStore.js`   | Reaktiver Zustand, Audit-History (`syncLogs[]`)                              |
+| `SyncToast.vue`        | User-Feedback nach Abschluss (Auto-hide nach 6s)                             |
 
 **Unterschied zu automatischem Sync:**
 
 Der manuelle Sync unterscheidet sich vom automatischen Hintergrund-Sync (`db.sync({ live: true, retry: true })`) in `db/index.js` dadurch, dass er:
+
 - Einmalig ausgeführt wird (kein Retry, kein Live-Polling)
 - Sofortiges visuelles Feedback via Fortschrittsbalken liefert
 - Den Benutzer über Ergebnis und Fehler explizit informiert
