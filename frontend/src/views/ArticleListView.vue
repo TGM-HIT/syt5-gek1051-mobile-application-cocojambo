@@ -259,13 +259,6 @@ const pickerlArtikel = computed(() => {
     })
 })
 
-const pickerlGesamtRabatt = computed(() => {
-  return pickerlArtikel.value.reduce((sum, a) => sum + (a.originalTotal - a.discountedTotal), 0)
-})
-
-const pickerlGesamtNachRabatt = computed(() => {
-  return pickerlArtikel.value.reduce((sum, a) => sum + a.discountedTotal, 0)
-})
 </script>
 
 <template>
@@ -771,17 +764,6 @@ const pickerlGesamtNachRabatt = computed(() => {
             </div>
           </div>
 
-          <!-- Summary -->
-          <div class="border-t border-gray-200 dark:border-gray-600 pt-3 mt-3 space-y-1">
-            <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-              <span>Ersparnis</span>
-              <span class="font-medium text-green-600 dark:text-green-400">− {{ formatPrice(pickerlGesamtRabatt) }}</span>
-            </div>
-            <div class="flex justify-between text-base font-bold text-gray-800 dark:text-gray-100">
-              <span>Zu zahlen</span>
-              <span>{{ formatPrice(pickerlGesamtNachRabatt) }}</span>
-            </div>
-          </div>
         </div>
 
         <div
