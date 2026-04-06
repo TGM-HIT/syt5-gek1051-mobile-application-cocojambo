@@ -128,8 +128,11 @@ async function submitEdit() {
   submitting.value = true
   const article = editingArticle.value
   const newPrice = editPrice.value ?? null
+  const removingRabatt = (article.rabattfähig ?? false) && !editRabattfähig.value && article.rabattAngewendet
 
-  if (newPrice !== article.price && newPrice != null) {
+  if (removingRabatt) {
+    await articleStore.updatePrice(listId, article._id, article.price, article.rabattAngewendet.originalPreis)
+  } else if (newPrice !== article.price && newPrice != null) {
     await articleStore.updatePrice(listId, article._id, article.price, newPrice)
   }
 
@@ -140,8 +143,9 @@ async function submitEdit() {
     changedFields.unit = editUnit.value.trim()
   }
   if (editNote.value.trim() !== (article.note || '')) changedFields.note = editNote.value.trim()
-  if (newPrice !== article.price && newPrice == null) changedFields.price = null
+  if (!removingRabatt && newPrice !== article.price && newPrice == null) changedFields.price = null
   if (editRabattfähig.value !== (article.rabattfähig ?? false)) changedFields.rabattfähig = editRabattfähig.value
+  if (removingRabatt) changedFields.rabattAngewendet = null
 
   await articleStore.updateArticle(listId, article._id, changedFields)
   submitting.value = false
@@ -248,17 +252,19 @@ async function onPriceScanned(newPrice) {
 const showPickerlModal = ref(false)
 const pickerlProzent = ref(null)
 const pickerlAppliedIds = ref(new Set())
+const pickerlAppliedSnapshots = ref({})
 
 function openPickerlModal() {
   pickerlProzent.value = null
   pickerlAppliedIds.value = new Set()
+  pickerlAppliedSnapshots.value = {}
   showPickerlModal.value = true
 }
 
 const pickerlArtikel = computed(() => {
   if (!pickerlProzent.value || pickerlProzent.value <= 0 || pickerlProzent.value > 100) return []
   return articleStore.articles
-    .filter((a) => a.rabattfähig && !a.checked && a.price != null)
+    .filter((a) => a.rabattfähig && !a.checked && a.price != null && !pickerlAppliedIds.value.has(a._id))
     .map((a) => {
       const originalTotal = a.price * (a.quantity || 1)
       const discountedTotal = originalTotal * (1 - pickerlProzent.value / 100)
@@ -269,9 +275,17 @@ const pickerlArtikel = computed(() => {
 async function applyPickerl(a) {
   const prozent = pickerlProzent.value
   const discountedPreis = parseFloat((a.price * (1 - prozent / 100)).toFixed(2))
+  // Snapshot before the store updates so display stays frozen
+  pickerlAppliedSnapshots.value[a._id] = {
+    name: a.name,
+    quantity: a.quantity,
+    unit: a.unit,
+    originalTotal: a.originalTotal,
+    discountedTotal: a.discountedTotal,
+  }
+  pickerlAppliedIds.value = new Set([...pickerlAppliedIds.value, a._id])
   await articleStore.updatePrice(listId, a._id, a.price, discountedPreis)
   await articleStore.updateArticle(listId, a._id, { rabattAngewendet: { prozent, originalPreis: a.price } })
-  pickerlAppliedIds.value = new Set([...pickerlAppliedIds.value, a._id])
 }
 
 </script>
@@ -765,14 +779,12 @@ async function applyPickerl(a) {
         </div>
 
         <!-- Results -->
-        <div v-if="pickerlArtikel.length > 0" class="space-y-2 mb-5">
+        <div v-if="pickerlArtikel.length > 0 || Object.keys(pickerlAppliedSnapshots).length > 0" class="space-y-2 mb-5">
+          <!-- Pending articles -->
           <div
             v-for="a in pickerlArtikel"
             :key="a._id"
-            class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 border"
-            :class="pickerlAppliedIds.has(a._id)
-              ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 opacity-60'
-              : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700'"
+            class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 border bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700"
           >
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ a.name }}</p>
@@ -786,20 +798,38 @@ async function applyPickerl(a) {
                 <p class="text-xs text-gray-400 line-through">{{ formatPrice(a.originalTotal) }}</p>
               </div>
               <button
-                v-if="!pickerlAppliedIds.has(a._id)"
                 @click="applyPickerl(a)"
                 class="text-xs font-medium bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg px-2 py-1 transition-colors flex-shrink-0"
               >
                 Anwenden
               </button>
-              <span v-else class="text-green-600 dark:text-green-400 text-sm flex-shrink-0">✓</span>
+            </div>
+          </div>
+          <!-- Applied articles (frozen snapshot) -->
+          <div
+            v-for="(snap, id) in pickerlAppliedSnapshots"
+            :key="id"
+            class="flex items-center justify-between gap-2 rounded-lg px-3 py-2 border bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 opacity-60"
+          >
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ snap.name }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                {{ snap.quantity }}{{ snap.unit ? ' ' + snap.unit : '' }} · ursprünglich {{ formatPrice(snap.originalTotal) }}
+              </p>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <div class="text-right">
+                <p class="text-sm font-bold text-green-700 dark:text-green-400">{{ formatPrice(snap.discountedTotal) }}</p>
+                <p class="text-xs text-gray-400 line-through">{{ formatPrice(snap.originalTotal) }}</p>
+              </div>
+              <span class="text-green-600 dark:text-green-400 text-sm flex-shrink-0">✓</span>
             </div>
           </div>
 
         </div>
 
         <div
-          v-else-if="pickerlProzent > 0"
+          v-else-if="pickerlProzent > 0 && Object.keys(pickerlAppliedSnapshots).length === 0"
           class="text-sm text-gray-500 dark:text-gray-400 text-center mb-5 py-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
         >
           Keine rabattfähigen Artikel mit Preis vorhanden.
