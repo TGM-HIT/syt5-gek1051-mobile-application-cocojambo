@@ -244,6 +244,28 @@ async function onPriceScanned(newPrice) {
   }
   priceScanArticle.value = null
 }
+
+const showPickerlModal = ref(false)
+const pickerlProzent = ref(null)
+
+const pickerlArtikel = computed(() => {
+  if (!pickerlProzent.value || pickerlProzent.value <= 0 || pickerlProzent.value > 100) return []
+  return articleStore.articles
+    .filter((a) => a.rabattfähig && !a.checked && a.price != null)
+    .map((a) => {
+      const originalTotal = a.price * (a.quantity || 1)
+      const discountedTotal = originalTotal * (1 - pickerlProzent.value / 100)
+      return { ...a, originalTotal, discountedTotal }
+    })
+})
+
+const pickerlGesamtRabatt = computed(() => {
+  return pickerlArtikel.value.reduce((sum, a) => sum + (a.originalTotal - a.discountedTotal), 0)
+})
+
+const pickerlGesamtNachRabatt = computed(() => {
+  return pickerlArtikel.value.reduce((sum, a) => sum + a.discountedTotal, 0)
+})
 </script>
 
 <template>
@@ -301,14 +323,23 @@ async function onPriceScanned(newPrice) {
             + Artikel
           </button>
         </div>
-        <button
-          @click="exportToCsv"
-          class="border border-green-600 text-green-600 hover:bg-green-50 font-medium px-3 py-2 rounded-lg transition-colors"
-          title="Als CSV exportieren"
-          id="btn-export-csv"
-        >
-          CSV
-        </button>
+        <div class="flex gap-2">
+          <button
+            @click="exportToCsv"
+            class="border border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 font-medium px-3 py-2 rounded-lg transition-colors"
+            title="Als CSV exportieren"
+            id="btn-export-csv"
+          >
+            CSV
+          </button>
+          <button
+            @click="showPickerlModal = true; pickerlProzent = null"
+            class="border border-yellow-500 text-yellow-600 dark:text-yellow-400 dark:border-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 font-medium px-3 py-2 rounded-lg transition-colors"
+            title="Rabatt Pickerl berechnen"
+          >
+            🏷 Pickerl
+          </button>
+        </div>
       </div>
     </header>
 
@@ -697,6 +728,77 @@ async function onPriceScanned(newPrice) {
       @scanned="onPriceScanned"
       @close="showPriceScanner = false"
     />
+
+    <!-- Pickerl modal -->
+    <div
+      v-if="showPickerlModal"
+      class="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50"
+      @click.self="showPickerlModal = false"
+    >
+      <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md sm:mx-4 px-6 pt-6 pb-8">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">🏷 Rabatt Pickerl</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Gib den Rabatt in Prozent ein, um den Restbetrag für alle rabattfähigen Artikel zu berechnen.</p>
+
+        <div class="flex gap-3 items-center mb-6">
+          <input
+            v-model.number="pickerlProzent"
+            type="number"
+            min="1"
+            max="100"
+            step="1"
+            placeholder="z.B. 20"
+            class="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+          />
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">%</span>
+        </div>
+
+        <!-- Results -->
+        <div v-if="pickerlArtikel.length > 0" class="space-y-2 mb-5">
+          <div
+            v-for="a in pickerlArtikel"
+            :key="a._id"
+            class="flex items-center justify-between gap-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg px-3 py-2"
+          >
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ a.name }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                {{ a.quantity }}{{ a.unit ? ' ' + a.unit : '' }} · ursprünglich {{ formatPrice(a.originalTotal) }}
+              </p>
+            </div>
+            <div class="text-right flex-shrink-0">
+              <p class="text-sm font-bold text-green-700 dark:text-green-400">{{ formatPrice(a.discountedTotal) }}</p>
+              <p class="text-xs text-gray-400 line-through">{{ formatPrice(a.originalTotal) }}</p>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div class="border-t border-gray-200 dark:border-gray-600 pt-3 mt-3 space-y-1">
+            <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+              <span>Ersparnis</span>
+              <span class="font-medium text-green-600 dark:text-green-400">− {{ formatPrice(pickerlGesamtRabatt) }}</span>
+            </div>
+            <div class="flex justify-between text-base font-bold text-gray-800 dark:text-gray-100">
+              <span>Zu zahlen</span>
+              <span>{{ formatPrice(pickerlGesamtNachRabatt) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-else-if="pickerlProzent > 0"
+          class="text-sm text-gray-500 dark:text-gray-400 text-center mb-5 py-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+        >
+          Keine rabattfähigen Artikel mit Preis vorhanden.
+        </div>
+
+        <button
+          @click="showPickerlModal = false"
+          class="w-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          Schliessen
+        </button>
+      </div>
+    </div>
     <!-- Share modal -->
     <div
       v-if="showShareModal"
