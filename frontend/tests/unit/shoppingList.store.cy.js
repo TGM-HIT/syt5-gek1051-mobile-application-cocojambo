@@ -185,3 +185,35 @@ describe('ShoppingListStore – leaveList', () => {
     })
   })
 })
+
+describe('ShoppingListStore – deleteList', () => {
+  let store
+
+  beforeEach(() => {
+    localStorage.setItem('username', TEST_USERNAME)
+    setActivePinia(createPinia())
+    store = useShoppingListStore()
+  })
+
+  it('ruft db.remove mit id und rev auf', () => {
+    cy.window().then(async (win) => {
+      cy.stub(win.__db, 'remove').resolves({ ok: true })
+      cy.stub(win.__db, 'allDocs').resolves(makeAllDocsResult([]))
+      await store.deleteList('list-99', '1-xyz')
+      expect(win.__db.remove).to.have.been.calledWith('list-99', '1-xyz')
+    })
+  })
+
+  it('aktualisiert die Listenansicht nach dem Löschen', () => {
+    cy.window().then(async (win) => {
+      cy.stub(win.__db, 'remove').resolves({ ok: true })
+      const listA = { _id: 'list-1', type: 'list', name: 'A', members: [TEST_USERNAME], createdAt: '2024-01-01T00:00:00.000Z' }
+      cy.stub(win.__db, 'allDocs').resolves(makeAllDocsResult([listA]))
+      
+      await store.deleteList('list-99', '1-xyz')
+      expect(win.__db.allDocs).to.have.been.called
+      expect(store.lists).to.have.length(1)
+      expect(store.lists[0].name).to.equal('A')
+    })
+  })
+})

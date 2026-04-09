@@ -69,7 +69,17 @@ export const useArticleStore = defineStore('article', {
       const articleDocs = all
         .filter((doc) => doc.type === 'article' && doc.listId === listId && !deletedIds.has(doc._id))
         .map((doc) => applyPatches(doc, patchesByArticle[doc._id] || []))
-        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+        .sort((a, b) => {
+          const aR = !!a.rabattfähig
+          const bR = !!b.rabattfähig
+          if (aR !== bR) return aR ? -1 : 1
+          if (aR && bR) {
+            const aP = a.price ?? -Infinity
+            const bP = b.price ?? -Infinity
+            if (bP !== aP) return bP - aP
+          }
+          return new Date(a.createdAt) - new Date(b.createdAt)
+        })
       this.articles = articleDocs.filter((doc) => !doc.hidden)
       this.hiddenArticles = articleDocs.filter((doc) => doc.hidden)
 
@@ -78,13 +88,17 @@ export const useArticleStore = defineStore('article', {
         .filter((doc) => doc.type === 'check-event' && doc.listId === listId)
         .sort((a, b) => new Date(a.checkedAt) - new Date(b.checkedAt))
         .forEach((event) => {
-          if (!eventsByArticle[event.articleId]) eventsByArticle[event.articleId] = []
-          eventsByArticle[event.articleId].push(event)
+          if (!eventsByArticle[event.articleId]) eventsByArticle[event.articleId] = {}
+          eventsByArticle[event.articleId][event.checkedBy] = event
         })
+      for (const articleId of Object.keys(eventsByArticle)) {
+        eventsByArticle[articleId] = Object.values(eventsByArticle[articleId])
+          .sort((a, b) => new Date(a.checkedAt) - new Date(b.checkedAt))
+      }
       this.checkEvents = eventsByArticle
     },
 
-    async createArticle(listId, { name, quantity, unit, note, price, barcode } = {}) {
+    async createArticle(listId, { name, quantity, unit, note, price, barcode, rabattfähig } = {}) {
       await db.put({
         _id: Date.now().toString(),
         type: 'article',
@@ -98,6 +112,7 @@ export const useArticleStore = defineStore('article', {
         priceHistory: [],
         checked: false,
         hidden: false,
+        rabattfähig: rabattfähig ?? false,
         createdBy: getUsername(),
         createdAt: new Date().toISOString(),
       })
