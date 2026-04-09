@@ -96,8 +96,11 @@ App.vue
    ```js
    db.sync(remoteUrl, { live: true, retry: true })
    ```
+
 2. `live: true` hält die Verbindung dauerhaft offen und synchronisiert Änderungen in Echtzeit.
+
 3. `retry: true` sorgt dafür, dass bei Verbindungsabbruch automatisch erneut versucht wird zu synchronisieren.
+
 4. Konflikte werden über PouchDBs MVCC-Modell (Multi-Version Concurrency Control) und Revision-History gelöst.
 
 ---
@@ -116,16 +119,19 @@ App.vue
 **Technischer Ablauf:**
 
 1. Jedes Dokument enthält ein `createdAt`-Feld mit ISO-Timestamp.
+
 2. Listen werden absteigend sortiert (neueste zuerst):
    
    ```js
    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
    ```
+
 3. Artikel werden aufsteigend sortiert (älteste zuerst):
    
    ```js
    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
    ```
+
 4. Nach der Synchronisation werden die Timestamps verwendet, um die Reihenfolge der Änderungen korrekt darzustellen — z.B. wer ein Produkt zuerst abgehakt hat.
 
 ---
@@ -192,18 +198,18 @@ Damit die Synchronisation zwischen verschiedenen Geräten funktioniert, sind zwe
 1. **CouchDB-URL:** Die Verbindung zur CouchDB wird über einzelne Umgebungsvariablen in `frontend/.env` konfiguriert (siehe `frontend/.env.example` als Vorlage). Die Variablen `VITE_COUCHDB_USER`, `VITE_COUCHDB_PASSWORD`, `VITE_COUCHDB_HOST`, `VITE_COUCHDB_PORT` und `VITE_COUCHDB_DB` werden in `db/index.js` zur Remote-URL zusammengesetzt. `VITE_COUCHDB_HOST` muss auf die IP des CouchDB-Servers gesetzt werden (nicht `localhost`), damit andere Geräte im Netzwerk die gleiche Datenbank erreichen.
 
 2. **CORS:** CouchDB muss Cross-Origin-Requests erlauben, da Frontend (z.B. Port 5173) und CouchDB (Port 5984) unterschiedliche Origins sind. Die CORS-Konfiguration wird über `couchdb/local.ini` eingebunden:
-
+   
    ```ini
    [httpd]
    enable_cors = true
-
+   
    [cors]
    origins = *
    methods = GET, PUT, POST, HEAD, DELETE
    credentials = true
    headers = accept, authorization, content-type, origin, referer
    ```
-
+   
    Diese Datei wird in `docker-compose.yaml` als Volume gemountet.
 
 ---
