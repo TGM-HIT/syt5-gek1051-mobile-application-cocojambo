@@ -202,13 +202,13 @@ const priceHistory = [...(base.priceHistory || []), ...newPriceEntries]
 Jedes Dokument enthält ein `createdAt`-Feld mit ISO-8601-Timestamp, der beim Erstellen lokal gesetzt wird. Die Sortierung erfolgt in `loadArticles()` bzw. `loadLists()`:
 
 - **Listen** werden absteigend sortiert (neueste zuerst):
-  
+
   ```js
   .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   ```
 
 - **Artikel** werden aufsteigend sortiert (älteste zuerst, d. h. in der Reihenfolge, in der sie hinzugefügt wurden):
-  
+
   ```js
   .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
   ```

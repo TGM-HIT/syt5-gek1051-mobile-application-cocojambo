@@ -119,13 +119,14 @@ export const useArticleStore = defineStore('article', {
       await this.loadArticles(listId)
     },
 
-    async updateArticle(listId, articleId, changedFields) {
+    async updateArticle(listId, articleId, changedFields, articleName) {
       if (Object.keys(changedFields).length === 0) return
       await db.put({
         _id: `patch-${articleId}-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
         type: 'article-patch',
         articleId,
         listId,
+        articleName: articleName ?? articleId,
         fields: changedFields,
         editedBy: getUsername(),
         editedAt: new Date().toISOString(),
@@ -142,6 +143,7 @@ export const useArticleStore = defineStore('article', {
           _id: `check-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           type: 'check-event',
           articleId: article._id,
+          articleName: article.name,
           listId,
           checkedBy: getUsername(),
           checkedAt: new Date().toISOString(),
@@ -152,7 +154,7 @@ export const useArticleStore = defineStore('article', {
 
     async hideArticle(listId, article) {
       const base = await db.get(article._id)
-      await db.put({ ...base, hidden: true })
+      await db.put({ ...base, hidden: true, hiddenBy: getUsername(), hiddenAt: new Date().toISOString() })
       await this.loadArticles(listId)
     },
 
@@ -162,12 +164,13 @@ export const useArticleStore = defineStore('article', {
       await this.loadArticles(listId)
     },
 
-    async deleteArticle(listId, id, rev) {
+    async deleteArticle(listId, id, rev, articleName) {
       await db.put({
         _id: `delete-intent-${id}`,
         type: 'delete-intent',
         articleId: id,
         listId,
+        articleName: articleName ?? id,
         deletedAt: new Date().toISOString(),
         deletedBy: getUsername(),
       })
@@ -175,7 +178,7 @@ export const useArticleStore = defineStore('article', {
       await this.loadArticles(listId)
     },
 
-    async updatePrice(listId, articleId, currentPrice, newPrice) {
+    async updatePrice(listId, articleId, currentPrice, newPrice, articleName) {
       if (currentPrice === newPrice) return
       const now = new Date().toISOString()
       await db.put({
@@ -183,6 +186,7 @@ export const useArticleStore = defineStore('article', {
         type: 'article-patch',
         articleId,
         listId,
+        articleName: articleName ?? articleId,
         fields: { price: newPrice },
         priceHistoryEntry: { price: newPrice, setAt: now },
         editedBy: getUsername(),
