@@ -2,11 +2,19 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { useArticleStore } from '../../src/stores/article.js'
 import { useShoppingListStore } from '../../src/stores/shoppingList.js'
-import { seedLists, seedArticles } from '../../src/db/seedData.js'
+import { seedArticles } from '../../src/db/seedData.js'
 import ArticleListView from '../../src/views/ArticleListView.vue'
 
+const TEST_USERNAME = 'TestUser#abcd'
+
 const mockList = {
-  ...seedLists[0],
+  _id: 'seed-list-1',
+  type: 'list',
+  name: 'Wocheneinkauf',
+  category: 'Lebensmittel',
+  members: [TEST_USERNAME],
+  shareCode: 'WCH3NK',
+  createdAt: '2024-01-10T08:00:00.000Z',
   _rev: '1-abc',
 }
 
@@ -23,6 +31,7 @@ describe('ArticleListView – Ausblenden & Löschen', () => {
   let articleStore, listStore
 
   beforeEach(() => {
+    localStorage.setItem('username', TEST_USERNAME)
     const pinia = createPinia()
     setActivePinia(pinia)
 
@@ -154,6 +163,7 @@ describe('ArticleListView – Suche', () => {
   let articleStore, listStore
 
   beforeEach(() => {
+    localStorage.setItem('username', TEST_USERNAME)
     const pinia = createPinia()
     setActivePinia(pinia)
 
@@ -278,6 +288,7 @@ describe('ArticleListView – Teilen', () => {
   let articleStore, listStore
 
   beforeEach(() => {
+    localStorage.setItem('username', TEST_USERNAME)
     const pinia = createPinia()
     setActivePinia(pinia)
 
@@ -327,5 +338,155 @@ describe('ArticleListView – Teilen', () => {
     cy.contains('h2', 'Liste teilen').should('be.visible')
     cy.contains('button', 'Schliessen').click()
     cy.contains('h2', 'Liste teilen').should('not.exist')
+  })
+})
+
+describe('ArticleListView – CSV Export', () => {
+  let articleStore, listStore
+
+  beforeEach(() => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+
+    articleStore = useArticleStore()
+    listStore = useShoppingListStore()
+
+    cy.stub(articleStore, 'loadArticles').resolves()
+    cy.stub(articleStore, 'createArticle').resolves()
+    cy.stub(articleStore, 'updateArticle').resolves()
+    cy.stub(articleStore, 'toggleChecked').resolves()
+    cy.stub(articleStore, 'hideArticle').resolves()
+    cy.stub(articleStore, 'restoreArticle').resolves()
+    cy.stub(articleStore, 'deleteArticle').resolves()
+    cy.stub(listStore, 'loadLists').resolves()
+
+    listStore.lists = [mockList]
+
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/list/:id', component: ArticleListView }],
+    })
+
+    cy.wrap(router.push(`/list/${mockList._id}`)).then(() => {
+      cy.mount(ArticleListView, {
+        global: { plugins: [pinia, router] },
+      })
+    })
+  })
+
+  it('shows the CSV export button', () => {
+    cy.get('#btn-export-csv').should('be.visible')
+  })
+
+  it('CSV export button has the correct label', () => {
+    cy.get('#btn-export-csv').should('contain.text', 'CSV')
+  })
+
+  it('triggers a download when CSV export button is clicked', () => {
+    articleStore.articles = [...mockArticles]
+    articleStore.hiddenArticles = []
+
+    cy.window().then((win) => {
+      cy.stub(win.URL, 'createObjectURL').returns('blob:mock')
+      cy.stub(win.URL, 'revokeObjectURL').returns(undefined)
+    })
+
+    cy.get('#btn-export-csv').click()
+    cy.window().its('URL.createObjectURL').should('have.been.calledOnce')
+  })
+
+  it('does not crash when article list is empty', () => {
+    articleStore.articles = []
+    articleStore.hiddenArticles = []
+
+    cy.window().then((win) => {
+      cy.stub(win.URL, 'createObjectURL').returns('blob:mock')
+      cy.stub(win.URL, 'revokeObjectURL').returns(undefined)
+    })
+
+    cy.get('#btn-export-csv').click()
+    cy.window().its('URL.createObjectURL').should('have.been.calledOnce')
+  })
+
+  it('includes all visible articles in the CSV export', () => {
+    const articleWithNote = {
+      ...seedArticles[0],
+      checked: false,
+      hidden: false,
+      note: 'Bio bitte',
+      _rev: '1-a1',
+    }
+    articleStore.articles = [articleWithNote]
+    articleStore.hiddenArticles = []
+
+    let capturedBlob = null
+
+    cy.window().then((win) => {
+      cy.stub(win.URL, 'createObjectURL').callsFake((blob) => {
+        capturedBlob = blob
+        return 'blob:mock'
+      })
+      cy.stub(win.URL, 'revokeObjectURL').returns(undefined)
+    })
+
+    cy.get('#btn-export-csv').click()
+
+    cy.then(async () => {
+      const text = await capturedBlob.text()
+      expect(text).to.include('Name,Menge,Einheit,Notiz,Erledigt')
+      expect(text).to.include('Milch')
+      expect(text).to.include('Bio bitte')
+      expect(text).to.include('Nein')
+    })
+  })
+
+  it('marks checked articles as "Ja" in the CSV', () => {
+    const checkedArticle = {
+      ...seedArticles[1],
+      checked: true,
+      hidden: false,
+      _rev: '1-a2',
+    }
+    articleStore.articles = [checkedArticle]
+    articleStore.hiddenArticles = []
+
+    let capturedBlob = null
+
+    cy.window().then((win) => {
+      cy.stub(win.URL, 'createObjectURL').callsFake((blob) => {
+        capturedBlob = blob
+        return 'blob:mock'
+      })
+      cy.stub(win.URL, 'revokeObjectURL').returns(undefined)
+    })
+
+    cy.get('#btn-export-csv').click()
+
+    cy.then(async () => {
+      const text = await capturedBlob.text()
+      expect(text).to.include('Ja')
+    })
+  })
+
+  it('includes hidden articles in the CSV export', () => {
+    articleStore.articles = []
+    articleStore.hiddenArticles = [...mockHiddenArticles]
+
+    let capturedBlob = null
+
+    cy.window().then((win) => {
+      cy.stub(win.URL, 'createObjectURL').callsFake((blob) => {
+        capturedBlob = blob
+        return 'blob:mock'
+      })
+      cy.stub(win.URL, 'revokeObjectURL').returns(undefined)
+    })
+
+    cy.get('#btn-export-csv').click()
+
+    cy.then(async () => {
+      const text = await capturedBlob.text()
+      expect(text).to.include('Butter')
+    })
   })
 })

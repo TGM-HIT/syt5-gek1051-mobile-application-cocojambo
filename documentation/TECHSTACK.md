@@ -104,6 +104,10 @@ Bei der Synchronisation von Offline-Änderungen kann es zu Konflikten kommen. Ei
 
 Dieses Verhalten ist unerwünscht. In unserer Anwendung gilt das Prinzip **"Delete wins"**: Wenn ein Artikel von einem Benutzer gelöscht (ausgeblendet) wird, bleibt er gelöscht — unabhängig davon, ob ein anderer Benutzer den Artikel zeitlich danach bearbeitet hat. Die Löschung hat immer Vorrang, da ein Benutzer bewusst entschieden hat, dass der Artikel nicht mehr benötigt wird. Eine nachträgliche Bearbeitung durch einen anderen Benutzer, der die Löschung noch nicht synchronisiert bekommen hat, soll diese Entscheidung nicht rückgängig machen.
 
+### Konfliktstrategie: Last write wins
+
+Wenn zwei Benutzer denselben Artikel gleichzeitig offline bearbeiten (z.B. Person A ändert die Menge und Person B ändert den Preis), gilt das Prinzip **"Last write wins"**: Die zuletzt synchronisierte Änderung überschreibt die vorherige. CouchDB löst solche Konflikte automatisch anhand der Revision-History — die Änderung mit der höheren Revision gewinnt. In der Praxis bedeutet das, dass die Person, die zuerst wieder online geht und synchronisiert, ihre Änderung zunächst durchsetzt, diese aber von der zweiten Person beim Synchronisieren überschrieben wird.
+
 ## Schnittstelle
 
 Da CouchDB über eine ReST-Schnittstelle angesprochen wird und bestehende Javascript-Methoden für die Kommunikation existieren, werden diese verwendet. Ein Beispiel zur Löschung eines Elements:

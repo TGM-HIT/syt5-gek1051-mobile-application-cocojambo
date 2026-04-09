@@ -9,7 +9,7 @@ describe('Shopping Lists', () => {
   })
 
   it('creates a new list with name and category', () => {
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.get('input[placeholder="z.B. Wocheneinkauf"]').type('Wocheneinkauf Test')
     cy.get('input[placeholder="z.B. Lebensmittel"]').type('Lebensmittel')
     cy.contains('button', 'Erstellen').click()
@@ -19,7 +19,7 @@ describe('Shopping Lists', () => {
   })
 
   it('creates a list without category', () => {
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.get('input[placeholder="z.B. Wocheneinkauf"]').type('Nur Name')
     cy.contains('button', 'Erstellen').click()
 
@@ -27,14 +27,14 @@ describe('Shopping Lists', () => {
   })
 
   it('does not submit when name is empty', () => {
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.contains('button', 'Erstellen').click()
 
     cy.contains('h2', 'Neue Liste erstellen').should('be.visible')
   })
 
   it('persists list after page reload', () => {
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.get('input[placeholder="z.B. Wocheneinkauf"]').type('Persistente Liste')
     cy.contains('button', 'Erstellen').click()
     cy.contains('Persistente Liste').should('be.visible')
@@ -44,7 +44,7 @@ describe('Shopping Lists', () => {
   })
 
   it('deletes a list', () => {
-    cy.contains('+ Neue Liste erstellen').click()
+    cy.contains('+ Neue Liste').click()
     cy.get('input[placeholder="z.B. Wocheneinkauf"]').type('Zu löschende Liste')
     cy.contains('button', 'Erstellen').click()
     cy.contains('Zu löschende Liste').should('be.visible')
