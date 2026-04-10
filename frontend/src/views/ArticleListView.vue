@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useArticleStore } from '../stores/article.js'
 import { useShoppingListStore } from '../stores/shoppingList.js'
 import { useThemeStore } from '../stores/theme.js'
+import { useNotificationStore } from '../stores/notification.js'
 import BarcodeScanner from './BarcodeScanner.vue'
 import PriceTagScanner from './PriceTagScanner.vue'
 import ManualSyncButton from '../components/sync/ManualSyncButton.vue'
@@ -17,6 +18,8 @@ const themeStore = useThemeStore()
 
 const listId = route.params.id
 const list = ref(null)
+const notificationStore = useNotificationStore()
+const listNotifications = computed(() => notificationStore.notifications.filter((n) => n.listId === listId))
 
 const showModal = ref(false)
 const showEditModal = ref(false)
@@ -141,9 +144,9 @@ async function submitEdit() {
   const removingRabatt = (article.rabattfähig ?? false) && !editRabattfähig.value && article.rabattAngewendet
 
   if (removingRabatt) {
-    await articleStore.updatePrice(listId, article._id, article.price, article.rabattAngewendet.originalPreis)
+    await articleStore.updatePrice(listId, article._id, article.price, article.rabattAngewendet.originalPreis, article.name)
   } else if (newPrice !== article.price && newPrice != null) {
-    await articleStore.updatePrice(listId, article._id, article.price, newPrice)
+    await articleStore.updatePrice(listId, article._id, article.price, newPrice, article.name)
   }
 
   const changedFields = {}
@@ -158,7 +161,7 @@ async function submitEdit() {
   if (removingRabatt) changedFields.rabattAngewendet = null
   if (editTag.value !== (article.tag || '')) changedFields.tag = editTag.value
 
-  await articleStore.updateArticle(listId, article._id, changedFields)
+  await articleStore.updateArticle(listId, article._id, changedFields, article.name)
   submitting.value = false
   closeEditModal()
 }
@@ -269,7 +272,7 @@ function openPriceScanner(article) {
 async function onPriceScanned(newPrice) {
   showPriceScanner.value = false
   if (priceScanArticle.value && newPrice != null) {
-    await articleStore.updatePrice(listId, priceScanArticle.value._id, priceScanArticle.value.price, newPrice)
+    await articleStore.updatePrice(listId, priceScanArticle.value._id, priceScanArticle.value.price, newPrice, priceScanArticle.value.name)
   }
   priceScanArticle.value = null
 }
@@ -317,6 +320,40 @@ async function applyPickerl(a) {
 
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Notification banners -->
+    <TransitionGroup
+      name="notification"
+      tag="div"
+      class="fixed top-0 left-0 right-0 z-[45] safe-top flex flex-col gap-2 max-w-3xl mx-auto px-4 pt-3 pointer-events-none"
+    >
+      <div
+        v-for="n in listNotifications"
+        :key="n.id"
+        class="bg-white dark:bg-gray-800 rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 pointer-events-auto"
+        :class="n.type === 'add'
+          ? 'border border-green-200 dark:border-green-700'
+          : n.type === 'update'
+            ? 'border border-blue-200 dark:border-blue-700'
+            : n.type === 'check'
+              ? 'border border-yellow-200 dark:border-yellow-700'
+              : 'border border-red-200 dark:border-red-700'"
+        @click="notificationStore.dismiss(n.id)"
+      >
+        <span
+          class="text-lg flex-shrink-0"
+          :class="n.type === 'add' ? 'text-green-500' : n.type === 'update' ? 'text-blue-500' : n.type === 'check' ? 'text-yellow-500' : 'text-red-500'"
+        >●</span>
+        <span
+          class="text-sm font-medium flex-1"
+          :class="n.type === 'add' ? 'text-green-700 dark:text-green-300' : n.type === 'update' ? 'text-blue-700 dark:text-blue-300' : n.type === 'check' ? 'text-yellow-700 dark:text-yellow-300' : 'text-red-700 dark:text-red-300'"
+        >{{ n.message }}</span>
+        <span
+          class="text-xs flex-shrink-0"
+          :class="n.type === 'add' ? 'text-green-400 dark:text-green-500' : n.type === 'update' ? 'text-blue-400 dark:text-blue-500' : n.type === 'check' ? 'text-yellow-400 dark:text-yellow-500' : 'text-red-400 dark:text-red-500'"
+        >{{ n.time }}</span>
+      </div>
+    </TransitionGroup>
+
     <!-- Header -->
     <header class="bg-white dark:bg-gray-800 shadow-sm safe-top">
       <div class="max-w-3xl mx-auto px-4 pt-4 pb-5 space-y-3">
@@ -655,7 +692,7 @@ async function applyPickerl(a) {
                 ↩
               </button>
               <button
-                @click="articleStore.deleteArticle(listId, article._id, article._rev)"
+                @click="articleStore.deleteArticle(listId, article._id, article._rev, article.name)"
                 class="text-gray-400 hover:text-red-500 transition-colors text-sm"
                 title="Endgültig löschen"
               >
