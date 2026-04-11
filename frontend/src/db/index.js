@@ -66,6 +66,65 @@ function hasUsername() {
   return !!localStorage.getItem('username')
 }
 
+async function renameUser(newDisplayName) {
+  const oldUsername = localStorage.getItem('username')
+  if (!oldUsername) return null
+
+  const suffix = oldUsername.split('#')[1]
+  const newUsername = `${newDisplayName}#${suffix}`
+
+  if (oldUsername === newUsername) return newUsername
+
+  const result = await db.allDocs({ include_docs: true })
+  const docs = result.rows.map((row) => row.doc)
+
+  const updated = []
+
+  for (const doc of docs) {
+    switch (doc.type) {
+      case 'list':
+        if (doc.members && doc.members.includes(oldUsername)) {
+          updated.push({
+            ...doc,
+            members: doc.members.map((m) => (m === oldUsername ? newUsername : m)),
+          })
+        }
+        break
+      case 'article':
+        if (doc.createdBy === oldUsername || doc.hiddenBy === oldUsername) {
+          updated.push({
+            ...doc,
+            createdBy: doc.createdBy === oldUsername ? newUsername : doc.createdBy,
+            hiddenBy: doc.hiddenBy === oldUsername ? newUsername : doc.hiddenBy,
+          })
+        }
+        break
+      case 'article-patch':
+        if (doc.editedBy === oldUsername) {
+          updated.push({ ...doc, editedBy: newUsername })
+        }
+        break
+      case 'check-event':
+        if (doc.checkedBy === oldUsername) {
+          updated.push({ ...doc, checkedBy: newUsername })
+        }
+        break
+      case 'delete-intent':
+        if (doc.deletedBy === oldUsername) {
+          updated.push({ ...doc, deletedBy: newUsername })
+        }
+        break
+    }
+  }
+
+  if (updated.length > 0) {
+    await db.bulkDocs(updated)
+  }
+
+  localStorage.setItem('username', newUsername)
+  return newUsername
+}
+
 function generateShareCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let code = ''
@@ -75,4 +134,4 @@ function generateShareCode() {
   return code
 }
 
-export { db, remoteUrl, onDbChange, onRemoteChange, getUsername, setUsername, hasUsername, generateShareCode }
+export { db, remoteUrl, onDbChange, onRemoteChange, getUsername, setUsername, hasUsername, renameUser, generateShareCode }
