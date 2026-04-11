@@ -47,8 +47,13 @@ describe('Username-Prompt', () => {
 
 describe('Benutzername ändern', () => {
   beforeEach(() => {
-    cy.clearPouchDB()
     cy.visit('/')
+    cy.window().then((win) => {
+      win.localStorage.setItem('username', 'TestUser#abcd')
+      win.localStorage.setItem('__cypress_skip_seed', '1')
+    })
+    cy.reload()
+    cy.get('[data-cy="rename-username-btn"]').should('be.visible')
   })
 
   it('zeigt aktuellen Displaynamen im Header-Button', () => {
@@ -82,15 +87,11 @@ describe('Benutzername ändern', () => {
   })
 
   it('speichert neuen Namen mit unverändertem Suffix in localStorage', () => {
-    cy.window().then((win) => {
-      const oldSuffix = win.localStorage.getItem('username').split('#')[1]
-      cy.get('[data-cy="rename-username-btn"]').click()
-      cy.get('[data-cy="rename-input"]').clear().type('NeuerName')
-      cy.get('[data-cy="rename-submit"]').click()
-      cy.window().then((win2) => {
-        expect(win2.localStorage.getItem('username')).to.equal(`NeuerName#${oldSuffix}`)
-      })
-    })
+    cy.get('[data-cy="rename-username-btn"]').click()
+    cy.get('[data-cy="rename-input"]').clear().type('NeuerName')
+    cy.get('[data-cy="rename-submit"]').click()
+    cy.get('[data-cy="rename-modal"]').should('not.exist')
+    cy.window().its('localStorage').invoke('getItem', 'username').should('equal', 'NeuerName#abcd')
   })
 
   it('zeigt Fehlermeldung wenn der Name ein # enthält', () => {
@@ -120,10 +121,10 @@ describe('Benutzername ändern', () => {
     cy.get('input[placeholder="z.B. Wocheneinkauf"]').type('Testliste')
     cy.contains('Erstellen').click()
     cy.contains('Testliste').click()
-    cy.contains('+ Artikel hinzufügen').click()
+    cy.contains('+ Artikel').click()
     cy.get('input[placeholder="z.B. Milch"]').type('Testartikel')
     cy.contains('Hinzufügen').click()
-    cy.contains('Testartikel').parents('[data-cy^="article-item"]').find('[data-cy="toggle-checked"]').click()
+    cy.contains('p', 'Testartikel').parent().parent().find('input[type="checkbox"]').check()
 
     // Zurück zur Startseite und umbenennen
     cy.go('back')
