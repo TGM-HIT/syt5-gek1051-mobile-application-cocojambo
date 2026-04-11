@@ -814,3 +814,73 @@ Diese Funktion ist noch nicht umgesetzt. Die Implementierung würde erfordern:
 - Kamerazugriff und Bildverarbeitung
 - OCR zur Erkennung von Produktnamen auf Rechnungen
 - Abgleich mit bestehenden Artikeln in der Liste und automatisches Abhaken
+
+---
+
+## User Story 35 — QR-Code für Share-Code
+
+> Als Benutzer möchte ich zum Share-Code einer Liste einen QR-Code angezeigt bekommen und QR-Codes anderer Benutzer scannen können, um Listen schneller ohne Abtippen des Codes beitreten zu können.
+
+**Status:** Implementiert
+
+**Beteiligte Dateien:**
+
+- `frontend/src/views/ArticleListView.vue` — rendert den QR-Code im „Liste teilen"-Modal
+- `frontend/src/views/QrScanner.vue` — neue Komponente zum Scannen eines Share-Code-QR-Codes
+- `frontend/src/views/HomeView.vue` — bindet den Scanner in das „Liste beitreten"-Modal ein
+- `frontend/package.json` — neue Dependency `qrcode`
+
+### Designentscheidung: keine Schema-Änderung
+
+Der bereits bestehende 6-stellige `shareCode` auf dem `list`-Dokument wird unverändert weiterverwendet. Der QR-Code ist lediglich eine alternative **Darstellung** desselben Codes — die Sync- und Beitritts-Logik in `useShoppingListStore.joinList()` bleibt identisch. Damit bleibt das Feature auf die UI-Schicht beschränkt und kann keine Kollaborations-Invarianten brechen.
+
+Enkodiert wird der reine Share-Code (z. B. `A3X9K2`), nicht eine URL. Das hält den QR-Code klein und macht das Feature unabhängig von einem konkreten Deployment-Hostnamen.
+
+### Technischer Ablauf — Anzeige (Sender-Seite)
+
+1. Der Nutzer klickt im `ArticleListView` auf „Liste teilen". Das bestehende `showShareModal` wird auf `true` gesetzt.
+2. Ein `watch` auf `[showShareModal, list.value?.shareCode]` reagiert auf das Öffnen des Modals und ruft nach `nextTick()` die Library `qrcode` auf:
+
+   ```js
+   import QRCode from 'qrcode'
+   await QRCode.toCanvas(shareQrCanvas.value, code, { width: 200, margin: 1 })
+   ```
+
+3. Die Library zeichnet den QR-Code direkt in das via Template-Ref referenzierte `<canvas data-cy="share-qr">`-Element. Unter dem Canvas bleibt der Text-Code weiterhin sichtbar als Fallback für Nutzer, die den QR nicht scannen können.
+4. `nextTick()` ist nötig, weil das `<canvas>` erst nach dem `v-if="showShareModal"`-Render im DOM verfügbar ist.
+
+### Technischer Ablauf — Scannen (Empfänger-Seite)
+
+1. Im `HomeView` → Join-Modal steht neben dem Text-Input ein 📷-Button (`data-cy="qr-scan-btn"`). Ein Klick setzt `showQrScanner = true`.
+2. `<QrScanner>` wird als Overlay gemountet. In `onMounted` wird — analog zu Story 32 — ein `BrowserMultiFormatReader` aus `@zxing/browser` erzeugt und auf den Video-Stream angesetzt:
+
+   ```js
+   reader = new BrowserMultiFormatReader()
+   await reader.decodeFromVideoDevice(undefined, videoRef.value, (result, err) => {
+     if (result && !didScan) {
+       const code = normalize(result.getText())
+       if (!code) return  // invalid payload, continue scanning
+       didScan = true
+       BrowserMultiFormatReader.releaseAllStreams()
+       emit('scanned', code)
+     }
+   })
+   ```
+
+3. `normalize()` akzeptiert zwei Payload-Varianten:
+   - Einen nackten 6-stelligen Code, der dem Share-Code-Alphabet (`A–Z ohne I/O, 2–9 ohne 0/1`) entspricht.
+   - Eine URL mit einem `?join=XXXXXX`-Parameter (vorbereitet für eine spätere Deeplink-Variante).
+
+   Alles andere wird ignoriert, der Scan läuft weiter. Damit kann der Scanner nicht versehentlich auf fremde QR-Codes (WLAN-Zugangsdaten, vCards, Produktbarcodes) reagieren.
+
+4. Bei einem gültigen Ergebnis emittiert `QrScanner.vue` das `scanned`-Event. `HomeView.onQrScanned(code)` schließt den Scanner, setzt `joinCode.value = code` und ruft sofort `submitJoin()` auf — der Nutzer landet direkt in der neu beigetretenen Liste.
+
+### Ressourcenverwaltung
+
+`BrowserMultiFormatReader.releaseAllStreams()` wird in drei Fällen aufgerufen: nach erfolgreichem Scan, beim manuellen Schließen über den Abbrechen-Button sowie in `onUnmounted()`. Das ist dieselbe Strategie wie in `BarcodeScanner.vue` (Story 32) und verhindert, dass die Kamera-LED nach dem Schließen des Modals weiterleuchtet.
+
+### Fehlerfälle
+
+- **Kein Kamera-Zugriff:** `reader.decodeFromVideoDevice()` wirft — die Fehlermeldung wird im Overlay angezeigt und der Nutzer kann über „Abbrechen" zum Text-Input zurückkehren.
+- **Falscher QR-Inhalt:** `normalize()` liefert `null`, der Scan läuft weiter, es wird kein Event emittiert.
+- **Share-Code nicht gefunden:** `joinList()` liefert wie bisher `null`, `submitJoin()` setzt `joinError` auf „Keine Liste mit diesem Code gefunden." — dieselbe Fehlermeldung wie beim manuellen Eintippen.

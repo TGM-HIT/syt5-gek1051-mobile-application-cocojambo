@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useShoppingListStore } from '../stores/shoppingList.js'
 import { useThemeStore } from '../stores/theme.js'
 import { getUsername, renameUser } from '../db/index.js'
+import QrScanner from './QrScanner.vue'
 
 const router = useRouter()
 
@@ -19,6 +20,7 @@ const showJoinModal = ref(false)
 const joinCode = ref('')
 const joinError = ref('')
 const joining = ref(false)
+const showQrScanner = ref(false)
 
 const showDeleteModal = ref(false)
 const listToDelete = ref(null)
@@ -88,6 +90,12 @@ async function submitJoin() {
   } else {
     joinError.value = 'Keine Liste mit diesem Code gefunden.'
   }
+}
+
+function onQrScanned(code) {
+  showQrScanner.value = false
+  joinCode.value = code
+  submitJoin()
 }
 
 // Rename username
@@ -266,14 +274,25 @@ async function submitRename() {
         <form @submit.prevent="submitJoin" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Einladungscode</label>
-            <input
-                v-model="joinCode"
-                type="text"
-                required
-                maxlength="6"
-                placeholder="z.B. A3X9K2"
-                class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm text-center tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-lg"
-            />
+            <div class="flex gap-2">
+              <input
+                  v-model="joinCode"
+                  type="text"
+                  required
+                  maxlength="6"
+                  placeholder="z.B. A3X9K2"
+                  class="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm text-center tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-lg"
+              />
+              <button
+                  type="button"
+                  @click="showQrScanner = true"
+                  class="shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-3 transition-colors"
+                  title="QR-Code scannen"
+                  data-cy="qr-scan-btn"
+              >
+                📷
+              </button>
+            </div>
           </div>
           <p v-if="joinError" class="text-sm text-red-500">{{ joinError }}</p>
           <div class="flex gap-3 pt-4">
@@ -372,5 +391,11 @@ async function submitRename() {
         </div>
       </div>
     </div>
+
+    <QrScanner
+      v-if="showQrScanner"
+      @scanned="onQrScanned"
+      @close="showQrScanner = false"
+    />
   </div>
 </template>
