@@ -35,6 +35,7 @@
 | 32  | Als Benutzer möchte ich die Möglichkeit haben, Barcodes der Produkte scannen zu können und die Nährwerte (Kcal, Proteine, Fette, Kohlenhydrate) angezeigt zu bekommen, um über meine Ernährung besser aufgeklärt zu sein.                                                                                                                            | 8   | Schmid   | N2H  | Closed      |
 | 33  | Als Benutzer will ich meine Rechnung einscannen können, um die eingekauften Produkte einfach abhaken zu können.                                                                                                                                                                                                                                      | 5   | Chladek  | N2H  | In Progress |
 | 25  | Als Benutzer möchte ich meinen Benutzernamen nachträglich ändern können, damit mein Name in geteilten Listen aktuell bleibt.                                                                                                                                                                                                                          | 3   | Parushev | SH   | Open        |
+| 34  | Als Benutzer möchte ich zum Share-Code einer Liste einen QR-Code angezeigt bekommen und QR-Codes anderer Benutzer scannen können, um Listen schneller ohne Abtippen des Codes beitreten zu können.                                                                                                                                                  | 3   | Parushev | N2H  | Open        |
 
 ## SP pro Head
 
@@ -42,7 +43,7 @@ Lazar Bulic: 18
 
 Simon Chladek: 18
 
-Christian Parushev: 22
+Christian Parushev: 25
 
 Jeanette Schmid: 19
 
