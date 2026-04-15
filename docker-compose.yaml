@@ -7,8 +7,7 @@ version: '3.8'
 services:
 
   frontend:
-    build:
-      context: ./frontend
+    image: ghcr.io/tgm-hit/syt5-gek1051-mobile-application-cocojambo/frontend:latest
     container_name: frontend
     restart: always
     ports:
