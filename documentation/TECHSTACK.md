@@ -120,7 +120,11 @@ Ein Backend gibt es nicht, somit erfolgt die Kommunikation direkt über die ReST
 
 ## Scan von QR-/Barcodes
 
-Dazu wird die Library **html5-qrcode** verwendet.
+Ursprünglich war die Library **html5-qrcode** vorgesehen. In der Umsetzung wurde stattdessen **`@zxing/browser`** (`BrowserMultiFormatReader`) gewählt, da sie neben QR-Codes auch die im Lebensmittelhandel üblichen 1D-Barcodes (EAN-13, EAN-8 u. a.) in einer einzigen Reader-Instanz erkennt. Dadurch teilen sich der Barcode-Scanner (Story 32) und der Share-Code-QR-Scanner (Story 35) dieselbe Kamera-Pipeline.
+
+## Generierung von QR-Codes
+
+Für das Rendern des QR-Codes im Share-Modal (Story 35) wird die Library **`qrcode`** verwendet. Sie zeichnet den Code direkt in ein bestehendes `<canvas>`-Element (`QRCode.toCanvas(canvas, text)`), ohne zusätzliche DOM-Wrapper oder Assets.
 
 ## Abruf von Nährwerten von Produkten
 
@@ -140,6 +144,8 @@ Als Versionierungssystem wird hier **Git & Github** verwendet. Alle Komponenten 
 
 [4] Vue CLI, „@vue/cli-plugin-pwa | Vue CLI,“ [Online]. Verfügbar unter: [@vue/cli-plugin-pwa | Vue CLI](https://cli.vuejs.org/core-plugins/pwa.html#example-configuration) [Zugriff am: 20. Februar 2026].
 
-[5] M. Bhayas, „html5-qrcode: Lightweight & robust QR Code & Barcode scanning library for HTML5,“ GitHub, [Online]. Verfügbar unter: [GitHub - mebjas/html5-qrcode: A cross platform HTML5 QR code reader. See end to end implementation at: https://scanapp.org](https://github.com/mebjas/html5-qrcode) [Zugriff am: 20. Februar 2026].
+[5] ZXing Team, „@zxing/browser — ZXing ("zebra crossing") TypeScript Port for Browsers,“ npm, [Online]. Verfügbar unter: https://www.npmjs.com/package/@zxing/browser [Zugriff am: 11. April 2026].
+
+[7] N. Hurst, „node-qrcode — QR code generator for Node.js and browsers,“ GitHub, [Online]. Verfügbar unter: https://github.com/soldair/node-qrcode [Zugriff am: 11. April 2026].
 
 [6] Open Food Facts, „Open Food Facts Server API Documentation,“ [Online]. Verfügbar unter: [Introduction to Open Food Facts API documentation - Product Opener (Open Food Facts Server)](https://openfoodfacts.github.io/openfoodfacts-server/api/) [Zugriff am: 20. Februar 2026].

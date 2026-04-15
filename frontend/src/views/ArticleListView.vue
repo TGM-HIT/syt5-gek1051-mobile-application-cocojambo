@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import QRCode from 'qrcode'
 import { useArticleStore } from '../stores/article.js'
 import { useShoppingListStore } from '../stores/shoppingList.js'
 import { useThemeStore } from '../stores/theme.js'
@@ -30,6 +31,15 @@ const showShareModal = ref(false)
 const showReceiptScanner = ref(false)
 const submitting = ref(false)
 const searchQuery = ref('')
+const shareQrCanvas = ref(null)
+
+watch([showShareModal, () => list.value?.shareCode], async ([open, code]) => {
+  if (!open || !code) return
+  await nextTick()
+  if (shareQrCanvas.value) {
+    await QRCode.toCanvas(shareQrCanvas.value, code, { width: 200, margin: 1 })
+  }
+})
 
 watch(searchQuery, (q) => articleStore.searchArticles(q, listId))
 
@@ -963,11 +973,16 @@ async function onReceiptMatched(matchedArticles) {
     >
       <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm sm:mx-4 px-6 pt-6 pb-8 text-center">
         <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">Liste teilen</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Teile diesen Code, damit andere Benutzer der Liste beitreten können.</p>
-        <div class="bg-gray-100 dark:bg-gray-700 rounded-xl py-4 px-6 mb-6">
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Teile diesen Code oder scanne den QR-Code, damit andere Benutzer der Liste beitreten können.</p>
+        <div class="bg-gray-100 dark:bg-gray-700 rounded-xl py-4 px-6 mb-4">
           <span class="text-3xl font-mono font-bold tracking-widest text-gray-800 dark:text-gray-100">
             {{ list?.shareCode ?? '------' }}
           </span>
+        </div>
+        <div class="flex justify-center mb-6">
+          <div class="bg-white p-2 rounded-xl">
+            <canvas ref="shareQrCanvas" data-cy="share-qr"></canvas>
+          </div>
         </div>
         <button
           @click="showShareModal = false"

@@ -33,7 +33,9 @@
 | 30  | Als Benutzer möchte ich die Möglichkeit haben, meine Listen als CSV-Dateien zu exportieren, um diese beispielsweise in Excel-Dateien eintragen und weiterverwenden zu können.                                                                                                                                                                        | 5   | Yüksel   | N2H  | Closed      |
 | 31  | Als Benutzer möchte ich einen Button haben, der meine Listen aktualsiert, um eine manuelle Option für die Synchronisation zu haben.                                                                                                                                                                                                                  | 3   | Parushev | N2H  | Closed      |
 | 32  | Als Benutzer möchte ich die Möglichkeit haben, Barcodes der Produkte scannen zu können und die Nährwerte (Kcal, Proteine, Fette, Kohlenhydrate) angezeigt zu bekommen, um über meine Ernährung besser aufgeklärt zu sein.                                                                                                                            | 8   | Schmid   | N2H  | Closed      |
-| 33  | Als Benutzer will ich meine Rechnung einscannen können, um die eingekauften Produkte einfach abhaken zu können.                                                                                                                                                                                                                                      | 5   | Chladek  | N2H  | Closed      |
+| 33  | Als Benutzer will ich meine Rechnung einscannen können, um die eingekauften Produkte einfach abhaken zu können.                                                                                                                                                                                                                                      | 5   | Chladek  | N2H  | In Progress |
+| 25  | Als Benutzer möchte ich meinen Benutzernamen nachträglich ändern können, damit mein Name in geteilten Listen aktuell bleibt.                                                                                                                                                                                                                          | 3   | Parushev | SH   | Open        |
+| 35  | Als Benutzer möchte ich zum Share-Code einer Liste einen QR-Code angezeigt bekommen und QR-Codes anderer Benutzer scannen können, um Listen schneller ohne Abtippen des Codes beitreten zu können.                                                                                                                                                  | 3   | Parushev | N2H  | Open        |
 
 ## SP pro Head
 
@@ -41,7 +43,7 @@ Lazar Bulic: 18
 
 Simon Chladek: 18
 
-Christian Parushev: 19
+Christian Parushev: 25
 
 Jeanette Schmid: 19
 
