@@ -1,4 +1,5 @@
 import { defineConfig } from 'cypress'
+import codeCoverage from '@cypress/code-coverage/task.js'
 
 export default defineConfig({
   e2e: {
@@ -6,6 +7,10 @@ export default defineConfig({
     supportFile: 'tests/support/e2e.js',
     fixturesFolder: 'tests/fixtures',
     baseUrl: 'http://localhost:4173',
+    setupNodeEvents(on, config) {
+      codeCoverage(on, config)
+      return config
+    },
   },
   component: {
     specPattern: 'tests/unit/**/*.{cy,spec}.{js,ts,jsx,tsx}',
@@ -15,6 +20,10 @@ export default defineConfig({
     devServer: {
       framework: 'vue',
       bundler: 'vite',
+    },
+    setupNodeEvents(on, config) {
+      codeCoverage(on, config)
+      return config
     },
   },
 })

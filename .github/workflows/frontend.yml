@@ -34,11 +34,22 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Run unit tests
+      - name: Run unit tests with coverage
         run: npm run test:unit
+        env:
+          CYPRESS_COVERAGE: true
 
       - name: Run E2E tests
         run: npm run test:e2e
+        env:
+          CYPRESS_COVERAGE: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: false
 
       - name: Print build output
         run: ls -la dist
