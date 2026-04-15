@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@zxing/browser": "^0.1.5",
+    "@zxing/library": "^0.21.3",
     "pinia": "^3.0.4",
     "pouchdb": "^9.0.0",
     "pouchdb-browser": "^9.0.0",
@@ -40,9 +41,17 @@
   },
   "nyc": {
     "report-dir": "coverage",
-    "reporter": ["lcov", "text-summary"],
-    "include": ["src/**/*.{js,ts,vue}"],
-    "exclude": ["tests/**", "src/**/*.spec.*"]
+    "reporter": [
+      "lcov",
+      "text-summary"
+    ],
+    "include": [
+      "src/**/*.{js,ts,vue}"
+    ],
+    "exclude": [
+      "tests/**",
+      "src/**/*.spec.*"
+    ]
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
