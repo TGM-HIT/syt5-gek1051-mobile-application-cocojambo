@@ -1,8 +1,10 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useShoppingListStore } from '../stores/shoppingList.js'
 import { useThemeStore } from '../stores/theme.js'
+import { getUsername, renameUser } from '../db/index.js'
+import QrScanner from './QrScanner.vue'
 
 const router = useRouter()
 
@@ -18,6 +20,7 @@ const showJoinModal = ref(false)
 const joinCode = ref('')
 const joinError = ref('')
 const joining = ref(false)
+const showQrScanner = ref(false)
 
 const showDeleteModal = ref(false)
 const listToDelete = ref(null)
@@ -88,6 +91,47 @@ async function submitJoin() {
     joinError.value = 'Keine Liste mit diesem Code gefunden.'
   }
 }
+
+function onQrScanned(code) {
+  showQrScanner.value = false
+  joinCode.value = code
+  submitJoin()
+}
+
+// Rename username
+const currentUsername = ref(getUsername())
+const currentDisplayName = computed(() => currentUsername.value?.split('#')[0] ?? '')
+
+const showRenameModal = ref(false)
+const renameInput = ref('')
+const renameError = ref('')
+const renaming = ref(false)
+
+function openRenameModal() {
+  renameInput.value = currentDisplayName.value
+  renameError.value = ''
+  showRenameModal.value = true
+}
+
+function closeRenameModal() {
+  showRenameModal.value = false
+}
+
+async function submitRename() {
+  const name = renameInput.value.trim()
+  if (!name) return
+  if (name.includes('#')) {
+    renameError.value = 'Der Name darf kein # enthalten.'
+    return
+  }
+  renaming.value = true
+  renameError.value = ''
+  const newUsername = await renameUser(name)
+  currentUsername.value = newUsername
+  renaming.value = false
+  closeRenameModal()
+  store.loadLists()
+}
 </script>
 
 <template>
@@ -97,13 +141,26 @@ async function submitJoin() {
       <div class="max-w-3xl mx-auto px-4 pt-4 pb-5 space-y-3">
         <div class="flex items-center justify-between">
           <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Einkaufslisten</h1>
-          <button
-              @click="themeStore.toggle()"
-              class="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium px-3 py-2.5 rounded-lg transition-colors"
-              :title="themeStore.isDark ? 'Light Mode' : 'Dark Mode'"
-          >
-            {{ themeStore.isDark ? '☀️' : '🌙' }}
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+                @click="openRenameModal"
+                class="flex items-center gap-1.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2.5 rounded-lg transition-colors text-sm"
+                title="Benutzername ändern"
+                data-cy="rename-username-btn"
+            >
+              <span class="font-medium">{{ currentDisplayName }}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828A2 2 0 0110 16.414H8v-2a2 2 0 01.586-1.414z" />
+              </svg>
+            </button>
+            <button
+                @click="themeStore.toggle()"
+                class="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium px-3 py-2.5 rounded-lg transition-colors"
+                :title="themeStore.isDark ? 'Light Mode' : 'Dark Mode'"
+            >
+              {{ themeStore.isDark ? '☀️' : '🌙' }}
+            </button>
+          </div>
         </div>
         <div class="flex gap-2">
           <button
@@ -217,14 +274,25 @@ async function submitJoin() {
         <form @submit.prevent="submitJoin" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Einladungscode</label>
-            <input
-                v-model="joinCode"
-                type="text"
-                required
-                maxlength="6"
-                placeholder="z.B. A3X9K2"
-                class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm text-center tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-lg"
-            />
+            <div class="flex gap-2">
+              <input
+                  v-model="joinCode"
+                  type="text"
+                  required
+                  maxlength="6"
+                  placeholder="z.B. A3X9K2"
+                  class="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm text-center tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-lg"
+              />
+              <button
+                  type="button"
+                  @click="showQrScanner = true"
+                  class="shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg px-3 transition-colors"
+                  title="QR-Code scannen"
+                  data-cy="qr-scan-btn"
+              >
+                📷
+              </button>
+            </div>
           </div>
           <p v-if="joinError" class="text-sm text-red-500">{{ joinError }}</p>
           <div class="flex gap-3 pt-4">
@@ -241,6 +309,50 @@ async function submitJoin() {
                 class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
             >
               {{ joining ? 'Beitreten...' : 'Beitreten' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Rename Username Modal -->
+    <div
+        v-if="showRenameModal"
+        class="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50"
+        @click.self="closeRenameModal"
+        data-cy="rename-modal"
+    >
+      <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm sm:mx-4 px-6 pt-6 pb-8">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">Benutzername ändern</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Dein Name wird in allen geteilten Listen aktualisiert.</p>
+        <form @submit.prevent="submitRename" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Neuer Benutzername *</label>
+            <input
+                v-model="renameInput"
+                type="text"
+                required
+                placeholder="z.B. Max"
+                class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                data-cy="rename-input"
+            />
+          </div>
+          <p v-if="renameError" class="text-sm text-red-500">{{ renameError }}</p>
+          <div class="flex gap-3 pt-2">
+            <button
+                type="button"
+                @click="closeRenameModal"
+                class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Abbrechen
+            </button>
+            <button
+                type="submit"
+                :disabled="renaming"
+                class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
+                data-cy="rename-submit"
+            >
+              {{ renaming ? 'Speichern...' : 'Speichern' }}
             </button>
           </div>
         </form>
@@ -279,5 +391,11 @@ async function submitJoin() {
         </div>
       </div>
     </div>
+
+    <QrScanner
+      v-if="showQrScanner"
+      @scanned="onQrScanned"
+      @close="showQrScanner = false"
+    />
   </div>
 </template>
