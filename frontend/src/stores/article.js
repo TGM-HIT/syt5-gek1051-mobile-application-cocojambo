@@ -70,6 +70,17 @@ export const useArticleStore = defineStore('article', {
         .filter((doc) => doc.type === 'article' && doc.listId === listId && !deletedIds.has(doc._id))
         .map((doc) => applyPatches(doc, patchesByArticle[doc._id] || []))
         .sort((a, b) => {
+          // Checked items go to the bottom
+          if (a.checked !== b.checked) return a.checked ? 1 : -1
+          // Sort by tag (articles with tag before those without, alphabetically)
+          const tagA = (a.tag || '').toLowerCase()
+          const tagB = (b.tag || '').toLowerCase()
+          if (tagA !== tagB) {
+            if (!tagA) return 1
+            if (!tagB) return -1
+            return tagA.localeCompare(tagB, 'de')
+          }
+          // Within same tag: rabattfähig first, then by price descending
           const aR = !!a.rabattfähig
           const bR = !!b.rabattfähig
           if (aR !== bR) return aR ? -1 : 1
@@ -98,7 +109,7 @@ export const useArticleStore = defineStore('article', {
       this.checkEvents = eventsByArticle
     },
 
-    async createArticle(listId, { name, quantity, unit, note, price, barcode, rabattfähig } = {}) {
+    async createArticle(listId, { name, quantity, unit, note, price, barcode, tag, rabattfähig } = {}) {
       await db.put({
         _id: Date.now().toString(),
         type: 'article',
@@ -109,6 +120,7 @@ export const useArticleStore = defineStore('article', {
         note: note || '',
         price: price ?? null,
         barcode: barcode ?? null,
+        tag: tag || '',
         priceHistory: [],
         checked: false,
         hidden: false,
@@ -234,6 +246,7 @@ export const useArticleStore = defineStore('article', {
         unit: article.unit,
         note: article.note,
         barcode: article.barcode || null,
+        tag: article.tag || '',
       })
       this.searchResults = { inCurrentList: [], inOtherLists: [], inPast: [] }
     },
