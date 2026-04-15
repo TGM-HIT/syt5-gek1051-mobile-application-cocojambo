@@ -7,6 +7,7 @@ import { useThemeStore } from '../stores/theme.js'
 import { useNotificationStore } from '../stores/notification.js'
 import BarcodeScanner from './BarcodeScanner.vue'
 import PriceTagScanner from './PriceTagScanner.vue'
+import ReceiptScanner from './ReceiptScanner.vue'
 import ManualSyncButton from '../components/sync/ManualSyncButton.vue'
 import SyncToast from '../components/sync/SyncToast.vue'
 
@@ -26,6 +27,7 @@ const showEditModal = ref(false)
 const showScanner = ref(false)
 const showHidden = ref(false)
 const showShareModal = ref(false)
+const showReceiptScanner = ref(false)
 const submitting = ref(false)
 const searchQuery = ref('')
 
@@ -316,6 +318,15 @@ async function applyPickerl(a) {
   await articleStore.updateArticle(listId, a._id, { rabattAngewendet: { prozent, originalPreis: a.price } })
 }
 
+async function onReceiptMatched(matchedArticles) {
+  showReceiptScanner.value = false
+  for (const article of matchedArticles) {
+    if (!article.checked) {
+      await articleStore.toggleChecked(listId, article)
+    }
+  }
+}
+
 </script>
 
 <template>
@@ -423,6 +434,14 @@ async function applyPickerl(a) {
           >
             🏷 Pickerl
           </button>
+          <button
+            @click="showReceiptScanner = true"
+            class="border border-orange-500 text-orange-600 dark:text-orange-400 dark:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 font-medium px-3 py-2 rounded-lg transition-colors"
+            title="Rechnung scannen und Artikel abhaken"
+            id="btn-receipt-scanner"
+          >
+            🧾 Rechnung
+          </button>
         </div>
       </div>
     </header>
@@ -525,9 +544,15 @@ async function applyPickerl(a) {
               articleStore.searchResults.inOtherLists.length === 0 &&
               articleStore.searchResults.inPast.length === 0
             "
-            class="px-4 py-4 text-center text-sm text-gray-400 dark:text-gray-500"
+            class="px-4 py-4 flex items-center justify-between gap-3"
           >
-            Keine Artikel gefunden.
+            <span class="text-sm text-gray-400 dark:text-gray-500">Keine Artikel gefunden.</span>
+            <button
+              @click="() => { const q = searchQuery; clearSearch(); openModal(); newName = q }"
+              class="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+            >
+              + Hinzufügen
+            </button>
           </div>
         </div>
       </div>
@@ -832,6 +857,14 @@ async function applyPickerl(a) {
       :article-name="priceScanArticle?.name ?? ''"
       @scanned="onPriceScanned"
       @close="showPriceScanner = false"
+    />
+
+    <!-- Receipt scanner -->
+    <ReceiptScanner
+      v-if="showReceiptScanner"
+      :articles="articleStore.articles"
+      @matched="onReceiptMatched"
+      @close="showReceiptScanner = false"
     />
 
     <!-- Pickerl modal -->
