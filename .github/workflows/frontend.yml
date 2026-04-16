@@ -34,11 +34,30 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Run unit tests
+      - name: Run unit tests with coverage
         run: npm run test:unit
+        env:
+          CYPRESS_COVERAGE: true
 
       - name: Run E2E tests
         run: npm run test:e2e
+        env:
+          CYPRESS_COVERAGE: true
+
+      - name: Update coverage badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          COVERAGE=$(node -e "
+            const s = require('./coverage/coverage-summary.json');
+            const pct = s.total.lines.pct;
+            const color = pct >= 80 ? 'brightgreen' : pct >= 60 ? 'yellow' : 'red';
+            console.log(JSON.stringify({schemaVersion:1,label:'coverage',message:pct+'%',color}));
+          ")
+          curl -s -X PATCH \
+            -H "Authorization: token ${{ secrets.GIST_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"files\":{\"cocojambo-coverage.json\":{\"content\":$(echo $COVERAGE | jq -Rs .)}}}" \
+            https://api.github.com/gists/9ba7c2b7782fea0f767c26be0a743f9f
 
       - name: Print build output
         run: ls -la dist
