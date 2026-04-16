@@ -8,8 +8,6 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import { VitePWA } from 'vite-plugin-pwa'
 import istanbul from 'vite-plugin-istanbul'
 
-const coverage = process.env.COVERAGE === 'true'
-
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -18,17 +16,13 @@ export default defineConfig({
     tailwindcss(),
     nodePolyfills(),
     VitePWA({ registerType: 'autoUpdate' }),
-    ...(coverage
-      ? [
-          istanbul({
-            include: 'src/*',
-            exclude: ['node_modules', 'tests/'],
-            extension: ['.js', '.vue'],
-            requireEnv: false,
-          }),
-        ]
-      : []),
-  ],
+    process.env.CYPRESS_COVERAGE === 'true' && istanbul({
+      include: 'src/**/*',
+      exclude: ['node_modules', 'tests/'],
+      extension: ['.js', '.ts', '.vue'],
+      requireEnv: false,
+    }),
+  ].filter(Boolean),
   server: {
     host: true,
   },

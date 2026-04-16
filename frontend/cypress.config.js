@@ -1,11 +1,12 @@
 import { defineConfig } from 'cypress'
 import { createRequire } from 'node:module'
+import codeCoverage from '@cypress/code-coverage/task.js'
 
 const require = createRequire(import.meta.url)
 
 function registerPlugins(on, config) {
   require('cypress-mochawesome-reporter/plugin')(on)
-  require('@cypress/code-coverage/task')(on, config)
+  codeCoverage(on, config)
   return config
 }
 

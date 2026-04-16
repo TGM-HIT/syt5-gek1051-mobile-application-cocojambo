@@ -254,6 +254,33 @@ describe('ArticleListView – Suche', () => {
     cy.contains('Keine Artikel gefunden').should('be.visible')
   })
 
+  it('shows Hinzufügen button when no results found', () => {
+    articleStore.searchResults = { inCurrentList: [], inOtherLists: [], inPast: [] }
+    cy.get('input[placeholder="Artikel suchen..."]').type('xyz')
+    cy.contains('button', '+ Hinzufügen').should('be.visible')
+  })
+
+  it('opens create modal with search query pre-filled when Hinzufügen is clicked', () => {
+    articleStore.searchResults = { inCurrentList: [], inOtherLists: [], inPast: [] }
+    cy.get('input[placeholder="Artikel suchen..."]').type('Avocado')
+    cy.contains('button', '+ Hinzufügen').click()
+    cy.contains('h2', 'Neuer Artikel').should('be.visible')
+    cy.get('input[placeholder="z.B. Milch"]').should('have.value', 'Avocado')
+  })
+
+  it('clears the search query after clicking Hinzufügen', () => {
+    articleStore.searchResults = { inCurrentList: [], inOtherLists: [], inPast: [] }
+    cy.get('input[placeholder="Artikel suchen..."]').type('Avocado')
+    cy.contains('button', '+ Hinzufügen').click()
+    cy.get('input[placeholder="Artikel suchen..."]').should('have.value', '')
+  })
+
+  it('does not show Hinzufügen button when there are results', () => {
+    articleStore.searchResults = { inCurrentList: [mockArticles[0]], inOtherLists: [], inPast: [] }
+    cy.get('input[placeholder="Artikel suchen..."]').type('Milch')
+    cy.contains('button', '+ Hinzufügen').should('not.exist')
+  })
+
   it('calls toggleChecked when clicking a result in current list', () => {
     articleStore.searchResults = { inCurrentList: [mockArticles[0]], inOtherLists: [], inPast: [] }
     cy.get('input[placeholder="Artikel suchen..."]').type('Milch')

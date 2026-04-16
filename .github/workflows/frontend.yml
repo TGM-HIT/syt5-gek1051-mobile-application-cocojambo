@@ -10,12 +10,12 @@ on:
     paths:
       - 'frontend/**'
 
-permissions:
-  contents: write
-
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
 
     steps:
       - name: Checkout repository
@@ -29,75 +29,36 @@ jobs:
           cache-dependency-path: 'frontend/package-lock.json'
 
       - name: Install dependencies
-        working-directory: frontend
         run: npm ci
 
-      - name: Build (instrumented)
-        working-directory: frontend
+      - name: Build
         run: npm run build
-        env:
-          COVERAGE: 'true'
 
-      - name: Run component tests
-        working-directory: frontend
+      - name: Run unit tests with coverage
         run: npm run test:unit
         env:
-          COVERAGE: 'true'
+          CYPRESS_COVERAGE: true
 
       - name: Run E2E tests
-        working-directory: frontend
         run: npm run test:e2e
         env:
-          COVERAGE: 'true'
+          CYPRESS_COVERAGE: true
 
-      - name: Generate coverage report
-        if: always()
-        working-directory: frontend
-        run: npm run coverage:report
-
-      - name: Upload Mochawesome reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-reports
-          path: frontend/cypress/reports/
-          if-no-files-found: ignore
-
-      - name: Upload screenshots on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cypress-screenshots
-          path: frontend/cypress/screenshots/
-          if-no-files-found: ignore
-
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: frontend/coverage/
-          if-no-files-found: ignore
-
-      - name: Update coverage badge in README
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      - name: Update coverage badge
+        if: github.ref == 'refs/heads/main'
         run: |
-          PCT=$(node -e "console.log(Math.round(require('./frontend/coverage/coverage-summary.json').total.lines.pct))")
-          if   [ "$PCT" -ge 80 ]; then COLOR=brightgreen
-          elif [ "$PCT" -ge 60 ]; then COLOR=yellow
-          elif [ "$PCT" -ge 40 ]; then COLOR=orange
-          else COLOR=red
-          fi
+          COVERAGE=$(node -e "
+            const s = require('./coverage/coverage-summary.json');
+            const pct = s.total.lines.pct;
+            const color = pct >= 80 ? 'brightgreen' : pct >= 60 ? 'yellow' : 'red';
+            console.log(JSON.stringify({schemaVersion:1,label:'coverage',message:pct+'%',color}));
+          ")
+          curl -s -X PATCH \
+            -H "Authorization: token ${{ secrets.GIST_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"files\":{\"cocojambo-coverage.json\":{\"content\":$(echo $COVERAGE | jq -Rs .)}}}" \
+            https://api.github.com/gists/9ba7c2b7782fea0f767c26be0a743f9f
 
-          sed -i -E "s|coverage-[0-9]+%25-[a-z]+|coverage-${PCT}%25-${COLOR}|" README.md
-
-          if git diff --quiet README.md; then
-            echo "No change to coverage badge"
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md
-          git commit -m "chore(ci): update coverage badge to ${PCT}%"
-          git push
+      - name: Print build output
+        run: ls -la dist
+# dieser workflow wird jetzt korrekt in github actions ausgeführt

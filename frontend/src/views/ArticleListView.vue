@@ -8,6 +8,7 @@ import { useThemeStore } from '../stores/theme.js'
 import { useNotificationStore } from '../stores/notification.js'
 import BarcodeScanner from './BarcodeScanner.vue'
 import PriceTagScanner from './PriceTagScanner.vue'
+import ReceiptScanner from './ReceiptScanner.vue'
 import ManualSyncButton from '../components/sync/ManualSyncButton.vue'
 import SyncToast from '../components/sync/SyncToast.vue'
 
@@ -27,6 +28,7 @@ const showEditModal = ref(false)
 const showScanner = ref(false)
 const showHidden = ref(false)
 const showShareModal = ref(false)
+const showReceiptScanner = ref(false)
 const submitting = ref(false)
 const searchQuery = ref('')
 const shareQrCanvas = ref(null)
@@ -50,12 +52,18 @@ function clearSearch() {
   searchQuery.value = ''
 }
 
+const TAGS = [
+  'Obst & Gemüse', 'Backwaren', 'Milchprodukte', 'Fleisch & Wurst',
+  'Getränke', 'Tiefkühl', 'Konserven', 'Süßwaren', 'Haushalt', 'Sonstiges',
+]
+
 const newName = ref('')
 const newQuantity = ref(1)
 const newUnit = ref('')
 const newNote = ref('')
 const newPrice = ref(null)
 const newBarcode = ref(null)
+const newTag = ref('')
 const newRabattfähig = ref(false)
 
 const editingArticle = ref(null)
@@ -64,6 +72,7 @@ const editQuantity = ref(1)
 const editUnit = ref('')
 const editNote = ref('')
 const editPrice = ref(null)
+const editTag = ref('')
 const editRabattfähig = ref(false)
 
 onMounted(async () => {
@@ -86,6 +95,7 @@ function openModal() {
   newNote.value = ''
   newPrice.value = null
   newBarcode.value = null
+  newTag.value = ''
   newRabattfähig.value = false
   showModal.value = true
 }
@@ -114,6 +124,7 @@ async function submitCreate() {
     note: newNote.value.trim(),
     price: newPrice.value ?? null,
     barcode: newBarcode.value ?? null,
+    tag: newTag.value,
     rabattfähig: newRabattfähig.value,
   })
   submitting.value = false
@@ -127,6 +138,7 @@ function openEditModal(article) {
   editUnit.value = article.unit || ''
   editNote.value = article.note || ''
   editPrice.value = article.price
+  editTag.value = article.tag || ''
   editRabattfähig.value = article.rabattfähig ?? false
   showEditModal.value = true
 }
@@ -159,6 +171,7 @@ async function submitEdit() {
   if (!removingRabatt && newPrice !== article.price && newPrice == null) changedFields.price = null
   if (editRabattfähig.value !== (article.rabattfähig ?? false)) changedFields.rabattfähig = editRabattfähig.value
   if (removingRabatt) changedFields.rabattAngewendet = null
+  if (editTag.value !== (article.tag || '')) changedFields.tag = editTag.value
 
   await articleStore.updateArticle(listId, article._id, changedFields, article.name)
   submitting.value = false
@@ -240,6 +253,20 @@ function priceTrend(article) {
   return null
 }
 
+const groupedArticles = computed(() => {
+  const groups = []
+  let currentTag = null
+  for (const article of articleStore.articles) {
+    const tag = article.tag || ''
+    if (tag !== currentTag) {
+      groups.push({ tag, articles: [] })
+      currentTag = tag
+    }
+    groups[groups.length - 1].articles.push(article)
+  }
+  return groups
+})
+
 const listTotal = computed(() => {
   return articleStore.articles
     .filter((a) => !a.checked && a.price != null)
@@ -299,6 +326,15 @@ async function applyPickerl(a) {
   pickerlAppliedIds.value = new Set([...pickerlAppliedIds.value, a._id])
   await articleStore.updatePrice(listId, a._id, a.price, discountedPreis)
   await articleStore.updateArticle(listId, a._id, { rabattAngewendet: { prozent, originalPreis: a.price } })
+}
+
+async function onReceiptMatched(matchedArticles) {
+  showReceiptScanner.value = false
+  for (const article of matchedArticles) {
+    if (!article.checked) {
+      await articleStore.toggleChecked(listId, article)
+    }
+  }
 }
 
 </script>
@@ -408,6 +444,14 @@ async function applyPickerl(a) {
           >
             🏷 Pickerl
           </button>
+          <button
+            @click="showReceiptScanner = true"
+            class="border border-orange-500 text-orange-600 dark:text-orange-400 dark:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 font-medium px-3 py-2 rounded-lg transition-colors"
+            title="Rechnung scannen und Artikel abhaken"
+            id="btn-receipt-scanner"
+          >
+            🧾 Rechnung
+          </button>
         </div>
       </div>
     </header>
@@ -510,9 +554,15 @@ async function applyPickerl(a) {
               articleStore.searchResults.inOtherLists.length === 0 &&
               articleStore.searchResults.inPast.length === 0
             "
-            class="px-4 py-4 text-center text-sm text-gray-400 dark:text-gray-500"
+            class="px-4 py-4 flex items-center justify-between gap-3"
           >
-            Keine Artikel gefunden.
+            <span class="text-sm text-gray-400 dark:text-gray-500">Keine Artikel gefunden.</span>
+            <button
+              @click="() => { const q = searchQuery; clearSearch(); openModal(); newName = q }"
+              class="flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+            >
+              + Hinzufügen
+            </button>
           </div>
         </div>
       </div>
@@ -527,30 +577,35 @@ async function applyPickerl(a) {
       </div>
 
       <div class="grid gap-3">
-        <div
-          v-for="article in articleStore.articles"
-          :key="article._id"
-          class="relative rounded-xl shadow-sm border p-4 flex items-center gap-4"
-          :class="{
-            'opacity-60': article.checked,
-            'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600 pt-8': article.rabattfähig,
-            'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700': !article.rabattfähig,
-          }"
-        >
-          <!-- Rabatt badge -->
-          <span
-            v-if="article.rabattfähig"
-            class="absolute top-1.5 right-2 text-xs font-medium text-yellow-700 dark:text-yellow-400 bg-yellow-200 dark:bg-yellow-800/60 rounded-full px-2 py-0.5 leading-tight"
+        <template v-for="group in groupedArticles" :key="group.tag">
+          <div v-if="group.tag" class="flex items-center gap-2 mt-2 first:mt-0">
+            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wide">{{ group.tag }}</span>
+            <div class="flex-1 border-t border-gray-200"></div>
+          </div>
+          <div
+            v-for="article in group.articles"
+            :key="article._id"
+            class="relative rounded-xl shadow-sm border p-4 flex items-center gap-4"
+            :class="{
+              'opacity-60': article.checked,
+              'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600 pt-8': article.rabattfähig,
+              'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700': !article.rabattfähig,
+            }"
           >
-            🏷 Rabatt Pickerl kann verwendet werden
-          </span>
-          <!-- No-price warning for rabattfähig articles -->
-          <span
-            v-if="article.rabattfähig && article.price == null"
-            class="absolute top-1.5 left-2 text-xs font-medium text-orange-700 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/50 rounded-full px-2 py-0.5 leading-tight"
-          >
-            ⚠ Kein Preis – Sortierung ungenau
-          </span>
+            <!-- Rabatt badge -->
+            <span
+              v-if="article.rabattfähig"
+              class="absolute top-1.5 right-2 text-xs font-medium text-yellow-700 dark:text-yellow-400 bg-yellow-200 dark:bg-yellow-800/60 rounded-full px-2 py-0.5 leading-tight"
+            >
+              🏷 Rabatt Pickerl kann verwendet werden
+            </span>
+            <!-- No-price warning for rabattfähig articles -->
+            <span
+              v-if="article.rabattfähig && article.price == null"
+              class="absolute top-1.5 left-2 text-xs font-medium text-orange-700 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/50 rounded-full px-2 py-0.5 leading-tight"
+            >
+              ⚠ Kein Preis – Sortierung ungenau
+            </span>
           <!-- Checkbox -->
           <input
             type="checkbox"
@@ -571,6 +626,7 @@ async function applyPickerl(a) {
               {{ article.quantity }}
               <span v-if="article.unit">{{ article.unit }}</span>
             </p>
+            <span v-if="article.tag" class="inline-block text-[10px] font-medium bg-green-100 text-green-700 rounded-full px-1.5 py-0.5 mt-0.5">{{ article.tag }}</span>
             <p v-if="article.note" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 italic">{{ article.note }}</p>
             <p v-if="article.price != null" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               <span
@@ -635,6 +691,7 @@ async function applyPickerl(a) {
             </button>
           </div>
         </div>
+        </template>
       </div>
       <!-- Hidden articles section -->
       <div v-if="articleStore.hiddenArticles.length > 0" class="mt-8">
@@ -758,6 +815,16 @@ async function applyPickerl(a) {
               class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Abteilung</label>
+            <select
+              v-model="newTag"
+              class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Keine Abteilung</option>
+              <option v-for="t in TAGS" :key="t" :value="t">{{ t }}</option>
+            </select>
+          </div>
           <div class="flex items-center gap-2">
             <input
               v-model="newRabattfähig"
@@ -800,6 +867,14 @@ async function applyPickerl(a) {
       :article-name="priceScanArticle?.name ?? ''"
       @scanned="onPriceScanned"
       @close="showPriceScanner = false"
+    />
+
+    <!-- Receipt scanner -->
+    <ReceiptScanner
+      v-if="showReceiptScanner"
+      :articles="articleStore.articles"
+      @matched="onReceiptMatched"
+      @close="showReceiptScanner = false"
     />
 
     <!-- Pickerl modal -->
@@ -976,6 +1051,16 @@ async function applyPickerl(a) {
               placeholder="z.B. Bio-Qualität"
               class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Abteilung</label>
+            <select
+              v-model="editTag"
+              class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Keine Abteilung</option>
+              <option v-for="t in TAGS" :key="t" :value="t">{{ t }}</option>
+            </select>
           </div>
           <div class="flex items-center gap-2">
             <input
