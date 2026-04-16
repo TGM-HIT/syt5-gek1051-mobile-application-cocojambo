@@ -1,4 +1,6 @@
 [![Frontend](https://github.com/TGM-HIT/syt5-gek1051-mobile-application-cocojambo/actions/workflows/frontend.yml/badge.svg)](https://github.com/TGM-HIT/syt5-gek1051-mobile-application-cocojambo/actions/workflows/frontend.yml)
+[![Coverage](https://img.shields.io/badge/coverage-0%25-red)](https://github.com/TGM-HIT/syt5-gek1051-mobile-application-cocojambo/actions/workflows/frontend.yml)
+[![Reports](https://img.shields.io/badge/reports-artifacts-blue)](https://github.com/TGM-HIT/syt5-gek1051-mobile-application-cocojambo/actions/workflows/frontend.yml)
 [![Node.js Package](https://github.com/TGM-HIT/syt5-gek1051-mobile-application-cocojambo/actions/workflows/npm-publish-github-packages.yml/badge.svg)](https://github.com/TGM-HIT/syt5-gek1051-mobile-application-cocojambo/actions/workflows/npm-publish-github-packages.yml)
 # CocoJambo - Shopping List
 
@@ -97,3 +99,17 @@ Mit Cypress UI (interaktiv, startet den Dev-Server automatisch):
 ```bash
 npm run test:e2e:dev
 ```
+
+### Coverage
+
+Führt alle Tests mit Istanbul-Instrumentierung aus und erstellt einen HTML/LCOV-Coverage-Report:
+
+```bash
+npm run test:coverage
+```
+
+Reports danach unter `frontend/coverage/` (HTML: `coverage/index.html`, LCOV: `coverage/lcov.info`).
+
+### Test-Reports
+
+Cypress nutzt den `cypress-mochawesome-reporter`. Nach jedem Run werden HTML-Reports unter `frontend/cypress/reports/` erzeugt. In der CI werden Reports und Coverage als Artifacts hochgeladen und können über die GitHub-Actions-Run-Page heruntergeladen werden.
