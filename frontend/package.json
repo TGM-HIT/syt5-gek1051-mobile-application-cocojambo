@@ -13,6 +13,8 @@
     "test:e2e:dev": "start-server-and-test 'vite dev --port 4173' http://localhost:4173 'cypress open --e2e'",
     "test:unit": "cypress run --component",
     "test:unit:dev": "cypress open --component",
+    "test:coverage": "CYPRESS_COVERAGE=true npm run build && CYPRESS_COVERAGE=true cypress run --component && CYPRESS_COVERAGE=true start-server-and-test preview http://localhost:4173 'cypress run --e2e' && nyc report --reporter=text-summary --reporter=lcov --reporter=html",
+    "coverage:report": "nyc report --reporter=text-summary --reporter=lcov --reporter=html --reporter=json-summary",
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
@@ -30,6 +32,7 @@
     "@tailwindcss/vite": "^4.2.1",
     "@vitejs/plugin-vue": "^6.0.3",
     "cypress": "^15.9.0",
+    "cypress-mochawesome-reporter": "^3.8.4",
     "nyc": "^17.0.0",
     "prettier": "3.8.1",
     "start-server-and-test": "^2.1.3",

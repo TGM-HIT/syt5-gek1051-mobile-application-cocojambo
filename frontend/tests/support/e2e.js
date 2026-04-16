@@ -15,6 +15,8 @@
 
 // Import commands.js using ES2015 syntax:
 import './commands'
+import 'cypress-mochawesome-reporter/register'
+import '@cypress/code-coverage/support'
 
 // Ensure a username is set so the username prompt does not block e2e tests.
 beforeEach(() => {
