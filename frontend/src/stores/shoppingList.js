@@ -59,7 +59,14 @@ export const useShoppingListStore = defineStore('shoppingList', {
 
       let list = await findInDocs()
       if (!list) {
-        await db.replicate.from(remoteUrl, { live: false })
+        try {
+          await Promise.race([
+            db.replicate.from(remoteUrl, { live: false }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000)),
+          ])
+        } catch {
+          // replication failed or timed out — continue with local data
+        }
         list = await findInDocs()
       }
 

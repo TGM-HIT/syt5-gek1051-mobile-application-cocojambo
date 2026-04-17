@@ -4,7 +4,7 @@ const db = new PouchDB('shopping_lists')
 
 const couchUser = import.meta.env.VITE_COUCHDB_USER || 'admin'
 const couchPassword = import.meta.env.VITE_COUCHDB_PASSWORD || 'password'
-const couchHost = import.meta.env.VITE_COUCHDB_HOST || 'localhost'
+const couchHost = import.meta.env.VITE_COUCHDB_HOST || window.location.hostname
 const couchPort = import.meta.env.VITE_COUCHDB_PORT || '5984'
 const couchDb = import.meta.env.VITE_COUCHDB_DB || 'shopping_lists'
 const remoteUrl = `http://${couchUser}:${couchPassword}@${couchHost}:${couchPort}/${couchDb}`
