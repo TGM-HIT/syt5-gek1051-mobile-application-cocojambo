@@ -884,3 +884,113 @@ Enkodiert wird der reine Share-Code (z. B. `A3X9K2`), nicht eine URL. Das hält 
 - **Kein Kamera-Zugriff:** `reader.decodeFromVideoDevice()` wirft — die Fehlermeldung wird im Overlay angezeigt und der Nutzer kann über „Abbrechen" zum Text-Input zurückkehren.
 - **Falscher QR-Inhalt:** `normalize()` liefert `null`, der Scan läuft weiter, es wird kein Event emittiert.
 - **Share-Code nicht gefunden:** `joinList()` liefert wie bisher `null`, `submitJoin()` setzt `joinError` auf „Keine Liste mit diesem Code gefunden." — dieselbe Fehlermeldung wie beim manuellen Eintippen.
+
+---
+
+## Cloud Deployment — Hetzner Cloud mit Terraform
+
+### Überblick
+
+Die Cocojambo Shopping-List App wird auf einem Hetzner Cloud Server via **Terraform** (Infrastructure as Code) deployed. Der Server läuft mit Docker Compose und beinhaltet:
+
+- **Caddy** als Reverse Proxy mit automatischem HTTPS (Let's Encrypt)
+- **CouchDB 3.3** als Datenbank für die PouchDB-Synchronisation
+- **Frontend** als statische Dateien via Caddy ausgeliefert
+
+Domain: `cocojambo-shopping.duckdns.org`
+
+### Architektur
+
+```
+                  Internet
+                     │
+                     ▼
+    ┌────────────────────────────────┐
+    │     Hetzner Cloud (cx23)       │
+    │     Ubuntu 24.04 + Docker      │
+    │                                │
+    │  ┌──────────┐  ┌────────────┐  │
+    │  │  Caddy   │  │  CouchDB   │  │
+    │  │ :80/:443 │  │   :5984    │  │
+    │  │ HTTPS    │  │            │  │
+    │  │ +static  │  │  Sync DB   │  │
+    │  └──────────┘  └────────────┘  │
+    │       172.40.0.20  172.40.0.10 │
+    │                                │
+    │       Docker Network           │
+    │       172.40.0.0/24            │
+    └────────────────────────────────┘
+```
+
+### Terraform-Dateien
+
+| Datei | Beschreibung |
+|---|---|
+| `terraform/providers.tf` | Hetzner Cloud Provider (~> 1.49) |
+| `terraform/variables.tf` | API Token, Server-Typ, CouchDB Credentials |
+| `terraform/main.tf` | SSH Key, Firewall, Server + Provisioner |
+| `terraform/outputs.tf` | Server IP, Frontend URL, CouchDB URL, SSH |
+| `terraform/cloud-init.yaml` | Docker-Installation, docker-compose.yaml, Caddyfile, CouchDB Config |
+
+### Firewall-Regeln
+
+| Port | Protokoll | Verwendung |
+|---|---|---|
+| 22 | TCP | SSH-Zugang |
+| 80 | TCP | HTTP (Redirect auf HTTPS) |
+| 443 | TCP | HTTPS (Caddy + Let's Encrypt) |
+| 5984 | TCP | CouchDB (PouchDB Sync) |
+| — | ICMP | Ping |
+
+### Provisioning-Ablauf
+
+1. **cloud-init** installiert Docker via `get.docker.com` und schreibt die Konfigurationsdateien:
+   - `docker-compose.yaml` mit Caddy + CouchDB Services
+   - `Caddyfile` für automatisches HTTPS auf `cocojambo-shopping.duckdns.org`
+   - `local.ini` für CouchDB CORS-Konfiguration
+2. **Provisioner `remote-exec`** wartet auf cloud-init und erstellt das Verzeichnis `/opt/cocojambo/dist`
+3. **Provisioner `file`** kopiert das gebaute Frontend (`frontend/dist/`) auf den Server
+4. **Provisioner `remote-exec`** startet Docker Compose
+
+### CouchDB CORS-Konfiguration
+
+Damit PouchDB aus dem Browser auf CouchDB zugreifen kann, ist CORS aktiviert:
+
+```ini
+[httpd]
+enable_cors = true
+
+[cors]
+origins = *
+methods = GET, PUT, POST, HEAD, DELETE
+credentials = true
+headers = accept, authorization, content-type, origin, referer
+```
+
+### Deployment-Anleitung
+
+```bash
+# Voraussetzungen: Terraform, Hetzner Cloud API Token, SSH Key
+
+# 1. Frontend bauen
+cd frontend && npm install && npm run build && cd ..
+
+# 2. In terraform-Verzeichnis wechseln
+cd terraform
+
+# 3. Terraform initialisieren
+terraform init
+
+# 4. API Token setzen
+export TF_VAR_hcloud_token="dein-hetzner-api-token"
+
+# 5. Infrastruktur erstellen
+terraform apply
+
+# 6. Outputs anzeigen
+terraform output
+```
+
+### DuckDNS Domain
+
+Die Domain `cocojambo-shopping.duckdns.org` ist bei DuckDNS registriert und muss manuell auf die neue Server-IP zeigen. Caddy generiert automatisch ein TLS-Zertifikat via Let's Encrypt.
