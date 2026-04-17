@@ -1,8 +1,7 @@
 [![Frontend](https://github.com/TGM-HIT/syt5-gek1051-mobile-application-cocojambo/actions/workflows/frontend.yml/badge.svg)](https://github.com/TGM-HIT/syt5-gek1051-mobile-application-cocojambo/actions/workflows/frontend.yml)
-[![Coverage](https://img.shields.io/badge/coverage-0%25-red)](https://github.com/TGM-HIT/syt5-gek1051-mobile-application-cocojambo/actions/workflows/frontend.yml)
+[![coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/schlad3k/9ba7c2b7782fea0f767c26be0a743f9f/raw/cocojambo-coverage.json)](https://github.com/TGM-HIT/syt5-gek1051-mobile-application-cocojambo/actions/workflows/frontend.yml)
 [![Reports](https://img.shields.io/badge/reports-artifacts-blue)](https://github.com/TGM-HIT/syt5-gek1051-mobile-application-cocojambo/actions/workflows/frontend.yml)
 [![Node.js Package](https://github.com/TGM-HIT/syt5-gek1051-mobile-application-cocojambo/actions/workflows/npm-publish-github-packages.yml/badge.svg)](https://github.com/TGM-HIT/syt5-gek1051-mobile-application-cocojambo/actions/workflows/npm-publish-github-packages.yml)
-[![coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/schlad3k/9ba7c2b7782fea0f767c26be0a743f9f/raw/cocojambo-coverage.json)](https://github.com/TGM-HIT/syt5-gek1051-mobile-application-cocojambo/actions/workflows/frontend.yml)
 # CocoJambo - Shopping List
 
 ## Roles
