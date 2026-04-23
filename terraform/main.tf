@@ -1,7 +1,7 @@
 # ── SSH Key ────────────────────────────────────────────────────
 resource "hcloud_ssh_key" "default" {
   name       = "cocojambo-key"
-  public_key = file("~/.ssh/id_ed25519.pub")
+  public_key = trimspace(file("~/.ssh/id_ed25519.pub"))
 }
 
 # ── Firewall ──────────────────────────────────────────────────
