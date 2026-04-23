@@ -960,7 +960,7 @@ async function onReceiptMatched(matchedArticles) {
               <input
                 v-model="newPackageUnit"
                 type="text"
-                placeholder="z.B. g"
+                placeholder="z.B. kg"
                 class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -1208,7 +1208,7 @@ async function onReceiptMatched(matchedArticles) {
               <input
                 v-model="editPackageUnit"
                 type="text"
-                placeholder="z.B. g"
+                placeholder="z.B. kg"
                 class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
