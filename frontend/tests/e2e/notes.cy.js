@@ -10,14 +10,14 @@ describe('Notizen zu Artikeln', () => {
     cy.contains(listName).click()
   }
 
-  function addArticle(name, { quantity, unit, note } = {}) {
+  function addArticle(name, { quantity, packageUnit, note } = {}) {
     cy.contains('button', '+ Artikel').click()
     cy.get('input[placeholder="z.B. Milch"]').type(name)
     if (quantity) {
-      cy.get('input[type="number"]').clear().type(quantity)
+      cy.get('input[type="number"]').first().clear().type(quantity)
     }
-    if (unit) {
-      cy.get('input[placeholder="z.B. kg"]').type(unit)
+    if (packageUnit) {
+      cy.get('input[placeholder="z.B. g"]').type(packageUnit)
     }
     if (note) {
       cy.get('input[placeholder="z.B. Bio-Qualität"]').type(note)

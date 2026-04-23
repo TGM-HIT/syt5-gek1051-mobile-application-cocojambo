@@ -6,14 +6,17 @@ describe('Discount Mechanics (Rabatt / Pickerl)', () => {
     cy.contains(name).click()
   }
 
-  function createArticle(name, { quantity, unit, price, rabattfähig } = {}) {
+  function createArticle(name, { quantity, packageSize, packageUnit, price, rabattfähig } = {}) {
     cy.contains('+ Artikel').click()
     cy.get('input[placeholder="z.B. Milch"]').type(name)
     if (quantity) {
       cy.get('input[placeholder="1"]').clear().type(quantity)
     }
-    if (unit) {
-      cy.get('input[placeholder="z.B. kg"]').first().type(unit)
+    if (packageSize) {
+      cy.get('input[placeholder="z.B. 250"]').first().type(packageSize)
+    }
+    if (packageUnit) {
+      cy.get('input[placeholder="z.B. g"]').first().type(packageUnit)
     }
     if (price) {
       cy.get('input[placeholder="z.B. 2,49"]').first().type(price)
@@ -140,7 +143,7 @@ describe('Discount Mechanics (Rabatt / Pickerl)', () => {
     createArticle('Milch', { price: '2.00', rabattfähig: true })
 
     // Check off the article
-    cy.contains('Milch').parent().parent().find('input[type="checkbox"]').click()
+    cy.contains('p', 'Milch').parent().parent().find('input[type="checkbox"]').click()
 
     cy.contains('button', '🏷 Pickerl').click()
     cy.get('input[type="number"][min="1"][max="100"]').type('20')
