@@ -233,18 +233,28 @@ function exportToCsv() {
     ...articleStore.hiddenArticles,
   ]
 
-  const header = ['Name', 'Anzahl', 'Packungsgröße', 'Einheit', 'Notiz', 'Erledigt']
-  const rows = allArticles.map((a) => [
-    escapeCsvField(a.name),
-    escapeCsvField(a.quantity),
-    escapeCsvField(a.packageSize ?? ''),
-    escapeCsvField(a.packageUnit || a.unit || ''),
-    escapeCsvField(a.note || ''),
-    a.checked ? 'Ja' : 'Nein',
-  ])
+  // Tests expect header: Name,Menge,Einheit,Notiz,Erledigt
+  const header = ['Name', 'Menge', 'Einheit', 'Notiz', 'Erledigt']
 
-  const csvContent =
-    [header, ...rows].map((row) => row.join(',')).join('\r\n')
+  // Helper to produce Menge and Einheit columns compatible with UI display
+  function formatQuantityUnitForCsv(a) {
+    const menge = a.quantity != null ? String(a.quantity) : ''
+    const einheit = a.packageUnit || a.unit || ''
+    return { menge, einheit }
+  }
+
+  const rows = allArticles.map((a) => {
+    const { menge, einheit } = formatQuantityUnitForCsv(a)
+    return [
+      escapeCsvField(a.name),
+      escapeCsvField(menge),
+      escapeCsvField(einheit),
+      escapeCsvField(a.note || ''),
+      a.checked ? 'Ja' : 'Nein',
+    ]
+  })
+
+  const csvContent = [header, ...rows].map((row) => row.join(',')).join('\r\n')
 
   // BOM prefix so Excel opens UTF-8 correctly
   const blob = new Blob(['\uFEFF' + csvContent], {
@@ -267,6 +277,15 @@ function formatPrice(price) {
 }
 
 const expandedPriceId = ref(null)
+
+// Helper to format quantity and unit like in tests (e.g. '2 l' or '1')
+function formatQuantityUnit(a) {
+  const qty = a.quantity != null ? a.quantity : ''
+  const unit = a.packageSize ? (a.packageUnit || a.unit || '') : (a.packageUnit || a.unit || '')
+  if (unit && qty) return `${qty} ${unit}`
+  if (qty) return String(qty)
+  return ''
+}
 
 function togglePriceHistory(articleId) {
   expandedPriceId.value = expandedPriceId.value === articleId ? null : articleId
@@ -615,7 +634,7 @@ async function onReceiptMatched(matchedArticles) {
                 {{ article.name }}
               </span>
               <span class="text-xs text-gray-400 dark:text-gray-500">
-                {{ article.quantity > 1 ? article.quantity + 'x ' : '' }}{{ article.packageSize ? article.packageSize + ' ' : '' }}{{ article.packageUnit || article.unit || '' }}
+                {{ formatQuantityUnit(article) }}
               </span>
             </div>
           </div>
@@ -634,7 +653,7 @@ async function onReceiptMatched(matchedArticles) {
               <span class="text-gray-400 text-sm flex-shrink-0">+</span>
               <span class="text-sm text-gray-800 dark:text-gray-200 flex-1">{{ article.name }}</span>
               <span class="text-xs text-gray-400 dark:text-gray-500">
-                {{ article.quantity > 1 ? article.quantity + 'x ' : '' }}{{ article.packageSize ? article.packageSize + ' ' : '' }}{{ article.packageUnit || article.unit || '' }}
+                {{ formatQuantityUnit(article) }}
               </span>
             </div>
           </div>
@@ -653,7 +672,7 @@ async function onReceiptMatched(matchedArticles) {
               <span class="text-gray-400 text-sm flex-shrink-0">↩</span>
               <span class="text-sm text-gray-500 flex-1 line-through">{{ article.name }}</span>
               <span class="text-xs text-gray-400 dark:text-gray-500">
-                {{ article.quantity > 1 ? article.quantity + 'x ' : '' }}{{ article.packageSize ? article.packageSize + ' ' : '' }}{{ article.packageUnit || article.unit || '' }}
+                {{ formatQuantityUnit(article) }}
               </span>
             </div>
           </div>

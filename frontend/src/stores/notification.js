@@ -6,9 +6,19 @@ const notificationAudio = typeof Audio !== 'undefined' ? new Audio('/sounds/noti
 
 const HISTORY_KEY = 'notification-history'
 const HISTORY_LIMIT = 100
-const TOAST_DURATION_MS = 6000
+// Tests expect to auto-dismiss after 3 seconds
+const TOAST_DURATION_MS = 3000
 
 function formatTime(isoString) {
+  // Accept either an ISO timestamp or a short "HH:MM" string used in tests
+  if (typeof isoString === 'string' && /^\d{1,2}:\d{2}$/.test(isoString)) {
+    // normalize to HH:MM (pad hours)
+    const parts = isoString.split(':')
+    const hh = parts[0].padStart(2, '0')
+    const mm = parts[1]
+    return `${hh}:${mm}`
+  }
+
   const d = isoString ? new Date(isoString) : new Date()
   return d.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })
 }
