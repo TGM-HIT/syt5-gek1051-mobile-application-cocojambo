@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
 import { db, onRemoteChange, getUsername } from '../db/index.js'
+import { useNotificationSettingsStore } from './notificationSettings.js'
+
+const notificationAudio = typeof Audio !== 'undefined' ? new Audio('/sounds/notification.mp3') : null
 
 const HISTORY_KEY = 'notification-history'
 const HISTORY_LIMIT = 100
@@ -125,6 +128,15 @@ export const useNotificationStore = defineStore('notification', {
       saveHistory(this.history)
 
       setTimeout(() => this.dismiss(id), TOAST_DURATION_MS)
+
+      const settings = useNotificationSettingsStore()
+      if (settings.vibrationEnabled && 'vibrate' in navigator) {
+        navigator.vibrate(200)
+      }
+      if (settings.soundEnabled && notificationAudio) {
+        notificationAudio.currentTime = 0
+        notificationAudio.play().catch(() => {})
+      }
     },
 
     dismiss(id) {

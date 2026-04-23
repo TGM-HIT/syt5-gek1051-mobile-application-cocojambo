@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useShoppingListStore } from '../stores/shoppingList.js'
 import { useThemeStore } from '../stores/theme.js'
+import { useNotificationSettingsStore } from '../stores/notificationSettings.js'
 import { getUsername, renameUser } from '../db/index.js'
 import QrScanner from './QrScanner.vue'
 
@@ -10,6 +11,7 @@ const router = useRouter()
 
 const store = useShoppingListStore()
 const themeStore = useThemeStore()
+const notifSettings = useNotificationSettingsStore()
 
 const showModal = ref(false)
 const name = ref('')
@@ -151,6 +153,27 @@ async function submitRename() {
               <span class="font-medium">{{ currentDisplayName }}</span>
               <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828A2 2 0 0110 16.414H8v-2a2 2 0 01.586-1.414z" />
+              </svg>
+            </button>
+            <button
+                @click="notifSettings.toggleSound()"
+                class="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium px-3 py-2.5 rounded-lg transition-colors"
+                :class="{ 'opacity-40': !notifSettings.soundEnabled }"
+                :title="notifSettings.soundEnabled ? 'Ton aus' : 'Ton ein'"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path v-if="notifSettings.soundEnabled" stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9M11 5L6 9H2v6h4l5 4V5z" />
+                <path v-else stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" />
+              </svg>
+            </button>
+            <button
+                @click="notifSettings.toggleVibration()"
+                class="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium px-3 py-2.5 rounded-lg transition-colors"
+                :class="{ 'opacity-40': !notifSettings.vibrationEnabled }"
+                :title="notifSettings.vibrationEnabled ? 'Vibration aus' : 'Vibration ein'"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 4h8a1 1 0 011 1v14a1 1 0 01-1 1H8a1 1 0 01-1-1V5a1 1 0 011-1zM4 8v8M20 8v8M1 10v4M23 10v4" />
               </svg>
             </button>
             <button
