@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 import { db, onRemoteChange, getUsername } from '../db/index.js'
 
+const HISTORY_KEY = 'notification-history'
+const HISTORY_LIMIT = 100
+const TOAST_DURATION_MS = 6000
+
 function formatTime(isoString) {
   const d = isoString ? new Date(isoString) : new Date()
   return d.toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })
@@ -16,9 +20,29 @@ async function resolveName(articleName, articleId) {
   }
 }
 
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function saveHistory(history) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
+  } catch {
+    // storage full or unavailable — ignore
+  }
+}
+
 export const useNotificationStore = defineStore('notification', {
   state: () => ({
     notifications: [],
+    history: loadHistory(),
     _unsubscribe: null,
     _idCounter: 0,
   }),
@@ -27,7 +51,6 @@ export const useNotificationStore = defineStore('notification', {
     init() {
       if (this._unsubscribe) return
       this._unsubscribe = onRemoteChange(async (doc) => {
-        // Article added by someone else
         if (
           doc.type === 'article' &&
           !doc._deleted &&
@@ -35,10 +58,9 @@ export const useNotificationStore = defineStore('notification', {
           doc.createdBy && doc.createdBy !== getUsername()
         ) {
           const user = doc.createdBy.split('#')[0]
-          this._push(`${user} hat "${doc.name}" hinzugefügt`, 'add', formatTime(doc.createdAt), doc.listId)
+          this._push(`${user} hat "${doc.name}" hinzugefügt`, 'add', doc.createdAt, doc.listId)
         }
 
-        // Article hidden by someone else
         if (
           doc.type === 'article' &&
           doc.hidden === true &&
@@ -46,49 +68,76 @@ export const useNotificationStore = defineStore('notification', {
           doc.hiddenBy && doc.hiddenBy !== getUsername()
         ) {
           const user = doc.hiddenBy.split('#')[0]
-          this._push(`${user} hat "${doc.name}" ausgeblendet`, 'hide', formatTime(doc.hiddenAt), doc.listId)
+          this._push(`${user} hat "${doc.name}" ausgeblendet`, 'hide', doc.hiddenAt, doc.listId)
         }
 
-        // Article checked by someone else
         if (
           doc.type === 'check-event' &&
           doc.checkedBy && doc.checkedBy !== getUsername()
         ) {
           const user = doc.checkedBy.split('#')[0]
           const name = await resolveName(doc.articleName, doc.articleId)
-          this._push(`${user} hat "${name}" abgehakt`, 'check', formatTime(doc.checkedAt), doc.listId)
+          this._push(`${user} hat "${name}" abgehakt`, 'check', doc.checkedAt, doc.listId)
         }
 
-        // Article updated by someone else
         if (
           doc.type === 'article-patch' &&
           doc.editedBy && doc.editedBy !== getUsername()
         ) {
           const user = doc.editedBy.split('#')[0]
           const name = await resolveName(doc.articleName, doc.articleId)
-          this._push(`${user} hat "${name}" bearbeitet`, 'update', formatTime(doc.editedAt), doc.listId)
+          this._push(`${user} hat "${name}" bearbeitet`, 'update', doc.editedAt, doc.listId)
         }
 
-        // Article deleted by someone else
         if (
           doc.type === 'delete-intent' &&
           doc.deletedBy && doc.deletedBy !== getUsername()
         ) {
           const user = doc.deletedBy.split('#')[0]
           const name = await resolveName(doc.articleName, doc.articleId)
-          this._push(`${user} hat "${name}" gelöscht`, 'delete', formatTime(doc.deletedAt), doc.listId)
+          this._push(`${user} hat "${name}" gelöscht`, 'delete', doc.deletedAt, doc.listId)
         }
       })
     },
 
-    _push(message, type, time, listId) {
+    _push(message, type, timestamp, listId) {
       const id = ++this._idCounter
-      this.notifications.push({ id, message, type, time, listId })
-      setTimeout(() => this.dismiss(id), 3000)
+      const iso = timestamp || new Date().toISOString()
+      const entry = { id, message, type, time: formatTime(iso), timestamp: iso, listId }
+
+      // Dedupe: if the most recent history entry is identical (same message + listId
+      // within the last 10s), skip. Guards against duplicate emission from PouchDB.
+      const last = this.history[0]
+      if (
+        last &&
+        last.message === entry.message &&
+        last.listId === entry.listId &&
+        Math.abs(new Date(last.timestamp) - new Date(iso)) < 10_000
+      ) {
+        return
+      }
+
+      this.notifications.push(entry)
+      this.history.unshift(entry)
+      if (this.history.length > HISTORY_LIMIT) {
+        this.history.length = HISTORY_LIMIT
+      }
+      saveHistory(this.history)
+
+      setTimeout(() => this.dismiss(id), TOAST_DURATION_MS)
     },
 
     dismiss(id) {
       this.notifications = this.notifications.filter((n) => n.id !== id)
+    },
+
+    clearHistory(listId) {
+      if (listId) {
+        this.history = this.history.filter((n) => n.listId !== listId)
+      } else {
+        this.history = []
+      }
+      saveHistory(this.history)
     },
 
     destroy() {
