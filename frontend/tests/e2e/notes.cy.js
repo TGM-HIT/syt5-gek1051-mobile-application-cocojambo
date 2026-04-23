@@ -17,7 +17,7 @@ describe('Notizen zu Artikeln', () => {
       cy.get('input[type="number"]').first().clear().type(quantity)
     }
     if (packageUnit) {
-      cy.get('input[placeholder="z.B. g"]').type(packageUnit)
+      cy.get('input[placeholder="z.B. kg"]').type(packageUnit)
     }
     if (note) {
       cy.get('input[placeholder="z.B. Bio-Qualität"]').type(note)

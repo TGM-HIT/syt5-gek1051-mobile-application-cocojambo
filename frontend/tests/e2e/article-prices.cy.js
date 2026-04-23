@@ -18,7 +18,7 @@ describe('Article Prices', () => {
       cy.get('input[placeholder="z.B. 250"]').first().type(packageSize)
     }
     if (packageUnit) {
-      cy.get('input[placeholder="z.B. g"]').first().type(packageUnit)
+      cy.get('input[placeholder="z.B. kg"]').first().type(packageUnit)
     }
     if (price) {
       cy.get('input[placeholder="z.B. 2,49"]').first().type(price)
