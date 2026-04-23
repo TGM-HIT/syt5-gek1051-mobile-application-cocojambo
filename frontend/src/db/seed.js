@@ -1,9 +1,9 @@
 import { db, hasUsername } from './index.js'
-import { getSeedLists, seedArticles } from './seedData.js'
+import { getSeedLists, getSeedTags, seedArticles } from './seedData.js'
 
-const SEED_MARKER = 'seed-v4'
+const SEED_MARKER = 'seed-v5'
 
-export { getSeedLists, seedArticles }
+export { getSeedLists, getSeedTags, seedArticles }
 
 export async function seedDatabase() {
   // Skip seeding when Cypress E2E tests have cleared the DB
@@ -20,7 +20,8 @@ export async function seedDatabase() {
   }
 
   const seedLists = getSeedLists()
-  for (const doc of [...seedLists, ...seedArticles]) {
+  const seedTags = getSeedTags()
+  for (const doc of [...seedLists, ...seedTags, ...seedArticles]) {
     try {
       await db.put(doc)
     } catch (e) {

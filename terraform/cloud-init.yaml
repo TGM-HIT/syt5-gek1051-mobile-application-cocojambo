@@ -62,9 +62,15 @@ write_files:
   - path: /opt/cocojambo/Caddyfile
     content: |
       cocojambo-shopping.duckdns.org {
-          root * /srv
-          file_server
-          try_files {path} /index.html
+          handle_path /couchdb/* {
+              reverse_proxy couchdb:5984
+          }
+
+          handle {
+              root * /srv
+              try_files {path} /index.html
+              file_server
+          }
       }
 
   - path: /opt/cocojambo/local.ini

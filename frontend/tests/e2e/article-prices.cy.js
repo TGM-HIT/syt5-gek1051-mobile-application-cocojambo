@@ -8,14 +8,17 @@ describe('Article Prices', () => {
   }
 
   // Helper: create an article with optional price
-  function createArticle(name, { quantity, unit, price } = {}) {
+  function createArticle(name, { quantity, packageSize, packageUnit, price } = {}) {
     cy.contains('+ Artikel').click()
     cy.get('input[placeholder="z.B. Milch"]').type(name)
     if (quantity) {
       cy.get('input[placeholder="1"]').clear().type(quantity)
     }
-    if (unit) {
-      cy.get('input[placeholder="z.B. kg"]').first().type(unit)
+    if (packageSize) {
+      cy.get('input[placeholder="z.B. 250"]').first().type(packageSize)
+    }
+    if (packageUnit) {
+      cy.get('input[placeholder="z.B. kg"]').first().type(packageUnit)
     }
     if (price) {
       cy.get('input[placeholder="z.B. 2,49"]').first().type(price)
@@ -30,7 +33,7 @@ describe('Article Prices', () => {
 
   it('creates an article with a price and displays it', () => {
     createListAndOpen('Preistest')
-    createArticle('Milch', { quantity: 2, unit: 'l', price: '1.49' })
+    createArticle('Milch', { quantity: 2, packageSize: 1, packageUnit: 'l', price: '1.49' })
 
     cy.contains('Milch').should('be.visible')
     cy.contains('€ 1,49').should('be.visible')
@@ -46,7 +49,7 @@ describe('Article Prices', () => {
 
   it('shows total footer when articles have prices', () => {
     createListAndOpen('Total Test')
-    createArticle('Milch', { quantity: 2, unit: 'l', price: '1.49' })
+    createArticle('Milch', { quantity: 2, packageSize: 1, packageUnit: 'l', price: '1.49' })
     createArticle('Butter', { price: '2.79' })
 
     // Total = 2*1.49 + 1*2.79 = 5.77
@@ -71,7 +74,7 @@ describe('Article Prices', () => {
     cy.contains('€ 4,28').should('be.visible')
 
     // Check off Milch — total should drop to 2.79
-    cy.contains('Milch').parent().parent().find('input[type="checkbox"]').click()
+    cy.contains('p', 'Milch').parent().parent().find('input[type="checkbox"]').click()
     cy.contains('€ 2,79').should('be.visible')
   })
 

@@ -109,14 +109,15 @@ export const useArticleStore = defineStore('article', {
       this.checkEvents = eventsByArticle
     },
 
-    async createArticle(listId, { name, quantity, unit, note, price, barcode, tag, rabattfähig } = {}) {
+    async createArticle(listId, { name, quantity, packageSize, packageUnit, note, price, barcode, tag, rabattfähig } = {}) {
       await db.put({
         _id: Date.now().toString(),
         type: 'article',
         listId,
         name,
         quantity: quantity || 1,
-        unit: unit || '',
+        packageSize: packageSize ?? null,
+        packageUnit: packageUnit || '',
         note: note || '',
         price: price ?? null,
         barcode: barcode ?? null,
@@ -243,7 +244,8 @@ export const useArticleStore = defineStore('article', {
       await this.createArticle(currentListId, {
         name: article.name,
         quantity: article.quantity,
-        unit: article.unit,
+        packageSize: article.packageSize ?? null,
+        packageUnit: article.packageUnit || article.unit || '',
         note: article.note,
         barcode: article.barcode || null,
         tag: article.tag || '',

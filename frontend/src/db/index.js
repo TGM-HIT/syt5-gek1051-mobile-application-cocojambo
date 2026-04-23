@@ -4,10 +4,25 @@ const db = new PouchDB('shopping_lists')
 
 const couchUser = import.meta.env.VITE_COUCHDB_USER || 'admin'
 const couchPassword = import.meta.env.VITE_COUCHDB_PASSWORD || 'password'
-const couchHost = import.meta.env.VITE_COUCHDB_HOST || window.location.hostname
-const couchPort = import.meta.env.VITE_COUCHDB_PORT || '5984'
 const couchDb = import.meta.env.VITE_COUCHDB_DB || 'shopping_lists'
-const remoteUrl = `http://${couchUser}:${couchPassword}@${couchHost}:${couchPort}/${couchDb}`
+
+// Build a same-origin URL so the browser doesn't block mixed content when the
+// page is served over HTTPS. Caddy reverse-proxies /couchdb/* to couchdb:5984.
+// For local dev (vite on a different port than CouchDB) fall back to explicit host/port.
+const couchHostOverride = import.meta.env.VITE_COUCHDB_HOST
+const couchPortOverride = import.meta.env.VITE_COUCHDB_PORT
+let remoteUrl
+if (couchHostOverride) {
+  const proto = window.location.protocol === 'https:' ? 'https' : 'http'
+  const port = couchPortOverride || '5984'
+  remoteUrl = `${proto}://${couchUser}:${couchPassword}@${couchHostOverride}:${port}/${couchDb}`
+} else {
+  const origin = window.location.origin.replace(
+    /^https?:\/\//,
+    `$&${encodeURIComponent(couchUser)}:${encodeURIComponent(couchPassword)}@`,
+  )
+  remoteUrl = `${origin}/couchdb/${couchDb}`
+}
 
 const syncHandler = db.sync(remoteUrl, { live: true, retry: true })
 
