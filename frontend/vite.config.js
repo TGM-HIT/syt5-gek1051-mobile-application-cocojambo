@@ -20,6 +20,14 @@ export default defineConfig({
       manifest: {
         name: 'CocoJambo-Shoppingliste',
         short_name: 'CocoJambo-Shoppingliste',
+        icons: [
+          {
+            src: 'icon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any maskable',
+          },
+        ],
       },
     }),
     process.env.CYPRESS_COVERAGE === 'true' && istanbul({
