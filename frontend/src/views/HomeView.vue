@@ -27,6 +27,8 @@ const showQrScanner = ref(false)
 const showDeleteModal = ref(false)
 const listToDelete = ref(null)
 
+const showMenu = ref(false)
+
 onMounted(() => {
   store.loadLists()
   store.startLiveSync()
@@ -146,42 +148,24 @@ async function submitRename() {
           <div class="flex items-center gap-2">
             <button
                 @click="openRenameModal"
-                class="flex items-center gap-1.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2.5 rounded-lg transition-colors text-sm"
+                class="flex items-center gap-1.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2.5 rounded-lg transition-colors text-sm max-w-[8rem]"
                 title="Benutzername ändern"
                 data-cy="rename-username-btn"
             >
-              <span class="font-medium">{{ currentDisplayName }}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <span class="font-medium truncate">{{ currentDisplayName }}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 opacity-60 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828A2 2 0 0110 16.414H8v-2a2 2 0 01.586-1.414z" />
               </svg>
             </button>
             <button
-                @click="notifSettings.toggleSound()"
-                class="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium px-3 py-2.5 rounded-lg transition-colors"
-                :class="{ 'opacity-40': !notifSettings.soundEnabled }"
-                :title="notifSettings.soundEnabled ? 'Ton aus' : 'Ton ein'"
+                @click="showMenu = !showMenu"
+                class="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 p-2.5 rounded-lg transition-colors flex-shrink-0"
+                title="Menü"
+                data-cy="menu-btn"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path v-if="notifSettings.soundEnabled" stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9M11 5L6 9H2v6h4l5 4V5z" />
-                <path v-else stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
-            </button>
-            <button
-                @click="notifSettings.toggleVibration()"
-                class="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium px-3 py-2.5 rounded-lg transition-colors"
-                :class="{ 'opacity-40': !notifSettings.vibrationEnabled }"
-                :title="notifSettings.vibrationEnabled ? 'Vibration aus' : 'Vibration ein'"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8 4h8a1 1 0 011 1v14a1 1 0 01-1 1H8a1 1 0 01-1-1V5a1 1 0 011-1zM4 8v8M20 8v8M1 10v4M23 10v4" />
-              </svg>
-            </button>
-            <button
-                @click="themeStore.toggle()"
-                class="border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium px-3 py-2.5 rounded-lg transition-colors"
-                :title="themeStore.isDark ? 'Light Mode' : 'Dark Mode'"
-            >
-              {{ themeStore.isDark ? '☀️' : '🌙' }}
             </button>
           </div>
         </div>
@@ -420,5 +404,69 @@ async function submitRename() {
       @scanned="onQrScanned"
       @close="showQrScanner = false"
     />
+
+    <!-- Menu Drawer -->
+    <div
+        v-if="showMenu"
+        class="fixed inset-0 z-50"
+        @click.self="showMenu = false"
+    >
+      <div class="absolute inset-0 bg-black/40"></div>
+      <div class="absolute right-0 top-0 h-full w-72 max-w-[85%] bg-white dark:bg-gray-800 shadow-xl flex flex-col safe-top">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">Einstellungen</h2>
+          <button
+              @click="showMenu = false"
+              class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none"
+              title="Schließen"
+          >
+            ✕
+          </button>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-2">
+          <button
+              @click="notifSettings.toggleSound()"
+              class="w-full flex items-center justify-between gap-3 px-5 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <div class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path v-if="notifSettings.soundEnabled" stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9M11 5L6 9H2v6h4l5 4V5z" />
+                <path v-else stroke-linecap="round" stroke-linejoin="round" d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" />
+              </svg>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-200">Ton</span>
+            </div>
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full" :class="notifSettings.soundEnabled ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'">
+              {{ notifSettings.soundEnabled ? 'An' : 'Aus' }}
+            </span>
+          </button>
+
+          <button
+              @click="notifSettings.toggleVibration()"
+              class="w-full flex items-center justify-between gap-3 px-5 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <div class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 4h8a1 1 0 011 1v14a1 1 0 01-1 1H8a1 1 0 01-1-1V5a1 1 0 011-1zM4 8v8M20 8v8M1 10v4M23 10v4" />
+              </svg>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-200">Vibration</span>
+            </div>
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full" :class="notifSettings.vibrationEnabled ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'">
+              {{ notifSettings.vibrationEnabled ? 'An' : 'Aus' }}
+            </span>
+          </button>
+
+          <button
+              @click="themeStore.toggle()"
+              class="w-full flex items-center justify-between gap-3 px-5 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            <div class="flex items-center gap-3">
+              <span class="w-5 h-5 flex items-center justify-center text-base">{{ themeStore.isDark ? '☀️' : '🌙' }}</span>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-200">Design</span>
+            </div>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{ themeStore.isDark ? 'Light Mode' : 'Dark Mode' }}</span>
+          </button>
+        </nav>
+      </div>
+    </div>
   </div>
 </template>
