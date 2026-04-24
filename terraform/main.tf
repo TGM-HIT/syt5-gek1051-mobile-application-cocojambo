@@ -60,10 +60,12 @@ resource "hcloud_server" "cocojambo" {
   provisioner "remote-exec" {
     inline = ["cloud-init status --wait || true", "mkdir -p /opt/cocojambo/dist"]
     connection {
-      type    = "ssh"
-      user    = "root"
-      host    = self.ipv4_address
-      timeout = "10m"
+      type        = "ssh"
+      user        = "root"
+      private_key = file("~/.ssh/id_ed25519")
+      host        = self.ipv4_address
+      agent       = false
+      timeout     = "10m"
     }
   }
 
@@ -71,20 +73,24 @@ resource "hcloud_server" "cocojambo" {
     source      = "${path.module}/../frontend/dist/"
     destination = "/opt/cocojambo/dist"
     connection {
-      type    = "ssh"
-      user    = "root"
-      host    = self.ipv4_address
-      timeout = "10m"
+      type        = "ssh"
+      user        = "root"
+      private_key = file("~/.ssh/id_ed25519")
+      host        = self.ipv4_address
+      agent       = false
+      timeout     = "10m"
     }
   }
 
   provisioner "remote-exec" {
     inline = ["cd /opt/cocojambo && docker compose up -d"]
     connection {
-      type    = "ssh"
-      user    = "root"
-      host    = self.ipv4_address
-      timeout = "10m"
+      type        = "ssh"
+      user        = "root"
+      private_key = file("~/.ssh/id_ed25519")
+      host        = self.ipv4_address
+      agent       = false
+      timeout     = "10m"
     }
   }
 }
