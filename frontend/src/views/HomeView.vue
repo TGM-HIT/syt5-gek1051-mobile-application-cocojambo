@@ -409,10 +409,9 @@ async function submitRename() {
     <div
         v-if="showMenu"
         class="fixed inset-0 z-50"
-        @click.self="showMenu = false"
     >
-      <div class="absolute inset-0 bg-black/40"></div>
-      <div class="absolute right-0 top-0 h-full w-72 max-w-[85%] bg-white dark:bg-gray-800 shadow-xl flex flex-col safe-top">
+      <div class="absolute inset-0 bg-black/40" @click="showMenu = false"></div>
+      <div class="absolute right-0 top-0 h-full w-72 max-w-[85%] bg-white dark:bg-gray-800 shadow-xl flex flex-col safe-top" @click.stop>
         <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">Einstellungen</h2>
           <button
