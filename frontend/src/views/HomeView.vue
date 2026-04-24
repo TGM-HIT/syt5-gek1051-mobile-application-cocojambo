@@ -418,6 +418,7 @@ async function submitRename() {
               @click="showMenu = false"
               class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none"
               title="Schließen"
+              data-cy="menu-close"
           >
             ✕
           </button>
