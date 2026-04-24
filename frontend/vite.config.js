@@ -15,7 +15,21 @@ export default defineConfig({
     vueDevTools(),
     tailwindcss(),
     nodePolyfills(),
-    VitePWA({ registerType: 'autoUpdate' }),
+    VitePWA({
+      registerType: 'autoUpdate',
+      manifest: {
+        name: 'CocoJambo-Shoppingliste',
+        short_name: 'CocoJambo-Shoppingliste',
+        icons: [
+          {
+            src: 'icon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any maskable',
+          },
+        ],
+      },
+    }),
     process.env.CYPRESS_COVERAGE === 'true' && istanbul({
       include: 'src/**/*',
       exclude: ['node_modules', 'tests/'],
