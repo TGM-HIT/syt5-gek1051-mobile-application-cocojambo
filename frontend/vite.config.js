@@ -17,15 +17,25 @@ export default defineConfig({
     nodePolyfills(),
     VitePWA({
       registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'icon.svg'],
       manifest: {
-        name: 'CocoJambo-Shoppingliste',
-        short_name: 'CocoJambo-Shoppingliste',
+        name: 'CocoJambo Shoppingliste',
+        short_name: 'CocoJambo',
+        description: 'Deine persönliche Einkaufsliste',
+        theme_color: '#2563eb',
+        background_color: '#ffffff',
         icons: [
           {
             src: 'icon.svg',
             sizes: 'any',
             type: 'image/svg+xml',
-            purpose: 'any maskable',
+            purpose: 'any',
+          },
+          {
+            src: 'icon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'maskable',
           },
         ],
       },

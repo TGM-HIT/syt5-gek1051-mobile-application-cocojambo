@@ -409,16 +409,16 @@ async function submitRename() {
     <div
         v-if="showMenu"
         class="fixed inset-0 z-50"
-        @click.self="showMenu = false"
     >
-      <div class="absolute inset-0 bg-black/40"></div>
-      <div class="absolute right-0 top-0 h-full w-72 max-w-[85%] bg-white dark:bg-gray-800 shadow-xl flex flex-col safe-top">
+      <div class="absolute inset-0 bg-black/40" @click="showMenu = false"></div>
+      <div class="absolute right-0 top-0 h-full w-72 max-w-[85%] bg-white dark:bg-gray-800 shadow-xl flex flex-col safe-top" @click.stop>
         <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">Einstellungen</h2>
           <button
               @click="showMenu = false"
               class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none"
               title="Schließen"
+              data-cy="menu-close"
           >
             ✕
           </button>
@@ -458,6 +458,7 @@ async function submitRename() {
           <button
               @click="themeStore.toggle()"
               class="w-full flex items-center justify-between gap-3 px-5 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              :title="themeStore.isDark ? 'Light Mode' : 'Dark Mode'"
           >
             <div class="flex items-center gap-3">
               <span class="w-5 h-5 flex items-center justify-center text-base">{{ themeStore.isDark ? '☀️' : '🌙' }}</span>

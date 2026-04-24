@@ -26,6 +26,10 @@ function mountHomeView() {
   return useThemeStore()
 }
 
+function openMenu() {
+  cy.get('[data-cy="menu-btn"]').click()
+}
+
 describe('Dark/Light Mode', () => {
   beforeEach(() => {
     localStorage.removeItem('theme')
@@ -41,11 +45,13 @@ describe('Dark/Light Mode', () => {
 
   it('zeigt den Dark-Mode-Toggle-Button', () => {
     mountHomeView()
+    openMenu()
     cy.get('button[title="Dark Mode"]').should('be.visible')
   })
 
   it('wechselt zu Dark Mode bei Klick auf den Toggle', () => {
     mountHomeView()
+    openMenu()
     cy.get('button[title="Dark Mode"]').click()
     cy.document().then((doc) => {
       expect(doc.documentElement.classList.contains('dark')).to.be.true
@@ -54,6 +60,7 @@ describe('Dark/Light Mode', () => {
 
   it('wechselt zurück zu Light Mode bei erneutem Klick', () => {
     mountHomeView()
+    openMenu()
     cy.get('button[title="Dark Mode"]').click()
     cy.document().then((doc) => {
       expect(doc.documentElement.classList.contains('dark')).to.be.true
@@ -66,6 +73,7 @@ describe('Dark/Light Mode', () => {
 
   it('speichert die Auswahl in localStorage', () => {
     mountHomeView()
+    openMenu()
     cy.get('button[title="Dark Mode"]').click()
     cy.window().then((win) => {
       expect(win.localStorage.getItem('theme')).to.equal('dark')
@@ -74,6 +82,7 @@ describe('Dark/Light Mode', () => {
 
   it('speichert Light Mode in localStorage nach Zurückwechseln', () => {
     mountHomeView()
+    openMenu()
     cy.get('button[title="Dark Mode"]').click()
     cy.get('button[title="Light Mode"]').click()
     cy.window().then((win) => {
@@ -87,11 +96,13 @@ describe('Dark/Light Mode', () => {
     cy.document().then((doc) => {
       expect(doc.documentElement.classList.contains('dark')).to.be.true
     })
+    openMenu()
     cy.get('button[title="Light Mode"]').should('be.visible')
   })
 
   it('zeigt Sonnen-Icon im Dark Mode und Mond-Icon im Light Mode', () => {
     mountHomeView()
+    openMenu()
     cy.get('button[title="Dark Mode"]').should('contain', '🌙')
     cy.get('button[title="Dark Mode"]').click()
     cy.get('button[title="Light Mode"]').should('contain', '☀️')
