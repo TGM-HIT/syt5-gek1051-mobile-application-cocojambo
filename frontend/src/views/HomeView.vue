@@ -458,6 +458,7 @@ async function submitRename() {
           <button
               @click="themeStore.toggle()"
               class="w-full flex items-center justify-between gap-3 px-5 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              :title="themeStore.isDark ? 'Light Mode' : 'Dark Mode'"
           >
             <div class="flex items-center gap-3">
               <span class="w-5 h-5 flex items-center justify-center text-base">{{ themeStore.isDark ? '☀️' : '🌙' }}</span>
